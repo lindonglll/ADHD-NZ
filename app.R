@@ -6,294 +6,168 @@ library(sf)
 library(shinydashboard)
 library(plotly)
 library(DT)
+library(ggplot2)
+library(tidyr)
 
+# 读取 ADHD 数据集
+adhd_data <- read_excel("ADHD National Online Research Survey (Responses) - Rangiwai (R).xlsx")
 
+# 数据清理和预处理
+# 假设数据包含以下列（根据实际数据调整）
+# 1. 人口统计学信息（年龄、性别、地区等）
+# 2. ADHD 相关症状评分
+# 3. 生活质量指标
+# 4. 治疗相关信息
 
+# 数据清理函数
+clean_adhd_data <- function(data) {
+  # 移除完全为空的行
+  data <- data[!apply(data, 1, function(x) all(is.na(x))), ]
+  
+  # 处理缺失值
+  data <- data %>%
+    mutate(across(everything(), ~ifelse(. == "", NA, .)))
+  
+  return(data)
+}
 
-# Define file paths for easier data replacement(map data and the research data are in the document file 'Data')
-map_data <- "Data/Map/statsnz-2023-census-population-change-by-regional-council-SHP/2023-census-population-change-by-regional-council.shp" ## The Map Data
-data <- "Data/NZ_data_regional_council.xlsx" ## The Dataset for Page 3: Geographical Display, Using Regional Council Data
-data_health <- "Data/NZ_data_health_region.xlsx" ## The Dataset for Page 2: Plot, Using Health Region Data
-data_health_age <- "Data/NZ_data_health_region_age.xlsx" ## The Dataset for Page 3: Table, Using Health Region Data with young and all age
+# 清理数据
+adhd_clean <- clean_adhd_data(adhd_data)
 
-# Map label and id(For the new map data, you need to put the region name to replace REGC2023_1)
-map_label = ~REGC2023_1
-map_layerId = ~REGC2023_1
+# 获取数值型列（用于统计分析）
+numeric_cols <- names(adhd_clean)[sapply(adhd_clean, is.numeric)]
+categorical_cols <- names(adhd_clean)[sapply(adhd_clean, function(x) is.character(x) || is.factor(x))]
 
-### Data Cleaning #####################
-
-## Data cleaning for regional_council ##
-region_data <- read_excel(data, skip = 6)
-region_data <- region_data[-1, ] 
-
-# Delete unnecessary columns and rows
-region_data <- region_data[, c(-2,-83)]
-region_data <- region_data[c(-19, -20), ]
-
-# Rename columns
-colnames(region_data)[1] <- "Area"
-colnames(region_data)[2:81] <- c("allage_household_total", "allage_household_male", "allage_household_female", "allage_household_another",
-                                 "household_total", "household_male", "household_female", "household_another",
-                                 "Euro_allage_household_total", "Euro_allage_household_male", "Euro_allage_household_female", "Euro_allage_household_another",
-                                 "Euro_household_total", "Euro_household_male", "Euro_household_female", "Euro_household_another",
-                                 "Maori_allage_household_total", "Maori_allage_household_male", "Maori_allage_household_female", "Maori_allage_household_another",
-                                 "Maori_household_total", "Maori_household_male", "Maori_household_female", "Maori_household_another",
-                                 "Paci_allage_household_total", "Paci_allage_household_male", "Paci_allage_household_female", "Paci_allage_household_another",
-                                 "Paci_household_total", "Paci_household_male", "Paci_household_female", "Paci_household_another",
-                                 "Asia_allage_household_total", "Asia_allage_household_male", "Asia_allage_household_female", "Asia_allage_household_another",
-                                 "Asia_household_total", "Asia_household_male", "Asia_household_female", "Asia_household_another",
-                                 
-                                 "allage_not_household_total", "allage_not_household_male", "allage_not_household_female", "allage_not_household_another",
-                                 "not_household_total", "not_household_male", "not_household_female", "not_household_another",
-                                 "Euro_allage_not_household_total", "Euro_allage_not_household_male", "Euro_allage_not_household_female", "Euro_allage_not_household_another",
-                                 "Euro_not_household_total", "Euro_not_household_male", "Euro_not_household_female", "Euro_not_household_another",
-                                 "Maori_allage_not_household_total", "Maori_allage_not_household_male", "Maori_allage_not_household_female", "Maori_allage_not_household_another",
-                                 "Maori_not_household_total", "Maori_not_household_male", "Maori_not_household_female", "Maori_not_household_another",
-                                 "Paci_allage_not_household_total", "Paci_allage_not_household_male", "Paci_allage_not_household_female", "Paci_allage_not_household_another",
-                                 "Paci_not_household_total", "Paci_not_household_male", "Paci_not_household_female", "Paci_not_household_another",
-                                 "Asia_allage_not_household_total", "Asia_allage_not_household_male", "Asia_allage_not_household_female", "Asia_allage_not_household_another",
-                                 "Asia_not_household_total", "Asia_not_household_male", "Asia_not_household_female", "Asia_not_household_another"
-)
-## Data cleaning for regional_council ##
-
-
-## Data cleaning for health_region ##
-health_region_data <- read_excel(data_health, skip = 6)
-health_region_data <- health_region_data[-1, ] 
-
-# Delete unnecessary columns and rows
-health_region_data <- health_region_data[, c(-2,-83)]
-health_region_data <- health_region_data[c(-25, -26, -27), ]
-
-
-# Rename columns
-colnames(health_region_data)[1] <- "Area"
-colnames(health_region_data)[2:81] <- c("allage_household_total", "allage_household_male", "allage_household_female", "allage_household_another",
-                                        "household_total", "household_male", "household_female", "household_another",
-                                        "Euro_allage_household_total", "Euro_allage_household_male", "Euro_allage_household_female", "Euro_allage_household_another",
-                                        "Euro_household_total", "Euro_household_male", "Euro_household_female", "Euro_household_another",
-                                        "Maori_allage_household_total", "Maori_allage_household_male", "Maori_allage_household_female", "Maori_allage_household_another",
-                                        "Maori_household_total", "Maori_household_male", "Maori_household_female", "Maori_household_another",
-                                        "Paci_allage_household_total", "Paci_allage_household_male", "Paci_allage_household_female", "Paci_allage_household_another",
-                                        "Paci_household_total", "Paci_household_male", "Paci_household_female", "Paci_household_another",
-                                        "Asia_allage_household_total", "Asia_allage_household_male", "Asia_allage_household_female", "Asia_allage_household_another",
-                                        "Asia_household_total", "Asia_household_male", "Asia_household_female", "Asia_household_another",
-                                        
-                                        "allage_not_household_total", "allage_not_household_male", "allage_not_household_female", "allage_not_household_another",
-                                        "not_household_total", "not_household_male", "not_household_female", "not_household_another",
-                                        "Euro_allage_not_household_total", "Euro_allage_not_household_male", "Euro_allage_not_household_female", "Euro_allage_not_household_another",
-                                        "Euro_not_household_total", "Euro_not_household_male", "Euro_not_household_female", "Euro_not_household_another",
-                                        "Maori_allage_not_household_total", "Maori_allage_not_household_male", "Maori_allage_not_household_female", "Maori_allage_not_household_another",
-                                        "Maori_not_household_total", "Maori_not_household_male", "Maori_not_household_female", "Maori_not_household_another",
-                                        "Paci_allage_not_household_total", "Paci_allage_not_household_male", "Paci_allage_not_household_female", "Paci_allage_not_household_another",
-                                        "Paci_not_household_total", "Paci_not_household_male", "Paci_not_household_female", "Paci_not_household_another",
-                                        "Asia_allage_not_household_total", "Asia_allage_not_household_male", "Asia_allage_not_household_female", "Asia_allage_not_household_another",
-                                        "Asia_not_household_total", "Asia_not_household_male", "Asia_not_household_female", "Asia_not_household_another"
-)
-
-## Data cleaning for health_region ##
-health_region_age_data <- read_excel(data_health_age, skip = 6)
-health_region_age_data <- health_region_age_data[-1, ] 
-
-# Delete unnecessary columns and rows
-health_region_age_data <- health_region_age_data[, c(-2,-83)]
-health_region_age_data <- health_region_age_data[c(-25, -26, -27), ]
-
-
-# Rename columns
-colnames(health_region_age_data)[1] <- "Area"
-colnames(health_region_age_data)[2:81] <- c("allage_household_total", "allage_household_male", "allage_household_female", "allage_household_another",
-                                        "household_total", "household_male", "household_female", "household_another",
-                                        "Euro_allage_household_total", "Euro_allage_household_male", "Euro_allage_household_female", "Euro_allage_household_another",
-                                        "Euro_household_total", "Euro_household_male", "Euro_household_female", "Euro_household_another",
-                                        "Maori_allage_household_total", "Maori_allage_household_male", "Maori_allage_household_female", "Maori_allage_household_another",
-                                        "Maori_household_total", "Maori_household_male", "Maori_household_female", "Maori_household_another",
-                                        "Paci_allage_household_total", "Paci_allage_household_male", "Paci_allage_household_female", "Paci_allage_household_another",
-                                        "Paci_household_total", "Paci_household_male", "Paci_household_female", "Paci_household_another",
-                                        "Asia_allage_household_total", "Asia_allage_household_male", "Asia_allage_household_female", "Asia_allage_household_another",
-                                        "Asia_household_total", "Asia_household_male", "Asia_household_female", "Asia_household_another",
-                                        
-                                        "allage_not_household_total", "allage_not_household_male", "allage_not_household_female", "allage_not_household_another",
-                                        "not_household_total", "not_household_male", "not_household_female", "not_household_another",
-                                        "Euro_allage_not_household_total", "Euro_allage_not_household_male", "Euro_allage_not_household_female", "Euro_allage_not_household_another",
-                                        "Euro_not_household_total", "Euro_not_household_male", "Euro_not_household_female", "Euro_not_household_another",
-                                        "Maori_allage_not_household_total", "Maori_allage_not_household_male", "Maori_allage_not_household_female", "Maori_allage_not_household_another",
-                                        "Maori_not_household_total", "Maori_not_household_male", "Maori_not_household_female", "Maori_not_household_another",
-                                        "Paci_allage_not_household_total", "Paci_allage_not_household_male", "Paci_allage_not_household_female", "Paci_allage_not_household_another",
-                                        "Paci_not_household_total", "Paci_not_household_male", "Paci_not_household_female", "Paci_not_household_another",
-                                        "Asia_allage_not_household_total", "Asia_allage_not_household_male", "Asia_allage_not_household_female", "Asia_allage_not_household_another",
-                                        "Asia_not_household_total", "Asia_not_household_male", "Asia_not_household_female", "Asia_not_household_another"
-)
-
-## Data cleaning for health_region ##
-
-
-### Data Cleaning #####################
-
-# Keep main regions only
-health_region_main <- health_region_data %>%
-  filter(!grepl("^\\·", Area))
-# Create region list with "Main Region" as the first item, followed by all region names
-health_region_list <- c("All New Zealand Main Health Region", unique(health_region_main$Area))
-
-# Load shapefile
-nz_shape <- st_read(map_data)
-nz_shape <- st_transform(nz_shape, crs = 4326)
-
-
-# safe function for missing numeric 
+# 安全数值转换函数
 safe_numeric <- function(x) {
   if (is.null(x) || length(x) == 0 || is.na(x)) return(0)
   as.numeric(x)
 }
 
-
+# UI 定义
 ui <- dashboardPage(
-  dashboardHeader(title = "Young carers in NZ"),
+  dashboardHeader(title = "ADHD 新西兰研究数据仪表板"),
   dashboardSidebar(
     tags$head(tags$style(HTML(
       ".main-sidebar { background-color: #ffffff !important; }"
     ))),
     sidebarMenu(
-      menuItem("First Page", tabName = "tab-home", icon = icon("home")),
-      menuItem("Health Region Data View", tabName = "tab-2023", icon = icon("table")),
-      menuItem("Geographical Region Data View", tabName = "tab-map", icon = icon("globe"))
+      menuItem("首页", tabName = "tab-home", icon = icon("home")),
+      menuItem("数据概览", tabName = "tab-overview", icon = icon("table")),
+      menuItem("统计分析", tabName = "tab-analysis", icon = icon("chart-bar")),
+      menuItem("地理分布", tabName = "tab-map", icon = icon("globe"))
     ),
     br(),
     div(style = "position: absolute; bottom: 200px; left: 10px; right: 10px; font-size: 16px; border: 1px solid #ccc; padding: 10px; background-color: #ffffff; border-radius: 5px;",
-        HTML("<span style='color: black;'><a href='https://explore.data.stats.govt.nz/vis?fs[0]=2023%20Census%2C0%7CWork%23CAT_WORK%23&fs[1]=Unpaid%20activities%2C1%7CTotal%20-%20unpaid%20activities%2399%23%7CLooking%20after%20a%20member%20of%20own%20household%20who%20is%20ill%20or%20has%20a%20disability%233%23&pg=0&fc=Unpaid%20activities&snb=4&vw=tb&df[ds]=ds-nsiws-disseminate&df[id]=CEN23_WRK_013&df[ag]=STATSNZ&df[vs]=1.0&dq=2023.304%2B303%2B302%2B301%2B300%2B204%2B203%2B202%2B201%2B200%2B103%2B102%2B101%2B100%2B15%2B99%2B14%2B13%2B12%2B18%2B17%2B16%2B09%2B08%2B90%2B40%2B30%2B20%2B10%2B07%2B06%2B05%2B03%2B04%2B02%2B01%2B9999%2B99999.5%2B3.4%2B3%2B2%2B1%2B999.2%2B99.3%2B2%2B1%2B99&ly[rw]=CEN23_GEO_002&ly[cl]=CEN23_UNP_003%2CCEN23_ETH_002%2CCEN23_AGE_008%2CCEN23_GEN_002&to[TIME]=false' target='_blank' style='color: blue;'>Access the dataset</a><br><br>
-              Last update:<br>2-7-2025<br><br>
-              Contact Email:<br><span style='font-size: 13px; color: black;'><a href='mailto:fwu255@aucklanduni.ac.nz' style='color: blue;'>fwu255@aucklanduni.ac.nz</a></span></span>")
-    ),
-    tags$a(href = "https://www.compass.auckland.ac.nz", target = "_blank",
-           tags$img(src = "img/COMPASS_logo.png", style = "position: absolute; bottom: 20px; left: 20px; width: 160px;"))
+        HTML("<span style='color: black;'>ADHD 新西兰在线研究调查<br><br>
+              最后更新:<br>2025年<br><br>
+              联系邮箱:<br><span style='font-size: 13px; color: black;'>研究团队</span></span>")
+    )
   ),
   dashboardBody(
-    
     tabItems(
+      # 首页
       tabItem(tabName = "tab-home",
               fluidPage(
                 div(style = "border: 2px solid #ccc; border-radius: 10px; padding: 30px; background-color: #fefefe; box-shadow: 2px 2px 10px rgba(0,0,0,0.1);",
                     
-                    h2("Introduction to the Dataset: Young carers' unpaid activities - 2023 Census of Population and Dwellings"),
+                    h2("ADHD 新西兰在线研究调查数据仪表板"),
                     
-                    h4("📘 Data Source"),
-                    p("This dashboard is built upon data from the 2023 New Zealand Census of Population and Dwellings. ",
-                      "It provides a snapshot of society and supports planning and decision-making in health, education, housing, and transport. ",
-                      a("[View official dataset description]", href = "https://datainfoplus.stats.govt.nz/item/nz.govt.stats/7c1335e0-c2c7-4217-ac48-bfc7a68aea48", target = "_blank")),
-                    
-                    br(),
-                    
-                    p("The unpaid care-related statistics used here are part of the broader theme ",
-                      strong("\"Unpaid activities\""),
-                      " from the 2023 Census."),
-                    p(a("Learn more about this data classification here",
-                        href = "https://datainfoplus.stats.govt.nz/item/nz.govt.stats/bcb42609-9cde-4422-96ae-cff7a5b340ce/16",
-                        target = "_blank")),
+                    h4("📘 数据来源"),
+                    p("本仪表板基于 ADHD 新西兰在线研究调查数据构建。",
+                      "该调查旨在了解新西兰 ADHD 患者的现状、需求和挑战。"),
                     
                     br(),
                     
-                    h4("👥 Target Population"),
-                    p("The unpaid activities data applies to the usually resident population aged ",
-                      strong("15 to 29 years"), ", we called them ", strong("\"Young Carers\""), "."),
-                    
-                    br(),
-                    
-                    h4("🧩 Unpaid Activities Classification"),
-                    p("In the census, unpaid activities are classified into several categories. ",
-                      "This dashboard focuses on two categories related to care work for sick or disabled individuals:"),
-                    tableOutput("unpaid_category_table"),
-                    p(em("Note: Respondents may report multiple unpaid activities, so total counts may exceed the population count.")),
-                    
-                    br(),
-                    
-                    h4("🎯 Research Focus"),
+                    h4("👥 目标人群"),
+                    p("调查对象包括："),
                     tags$ul(
-                      tags$li(em("To understand the level of unpaid care work provided by gender groups")),
-                      tags$li(em("To assess how unpaid activities support social and economic systems")),
-                      tags$li(em("To analyse the demographic characteristics (e.g., gender, ethnicity) of people involved in unpaid activities")),
-                      tags$li(em("To analyse the importance of young carers in the society unpaid activities"))
+                      tags$li("ADHD 患者"),
+                      tags$li("ADHD 患者的家庭成员"),
+                      tags$li("医疗保健提供者"),
+                      tags$li("教育工作者")
                     ),
                     
                     br(),
                     
-                    h4("🔬 Research Result"),
-                    p("The research analysis is currently in progress. Findings will be updated and published in future versions of this dashboard."),
+                    h4("🎯 研究目标"),
+                    tags$ul(
+                      tags$li(em("了解新西兰 ADHD 患者的分布和特征")),
+                      tags$li(em("评估 ADHD 对患者生活质量的影响")),
+                      tags$li(em("分析治疗和服务的可及性")),
+                      tags$li(em("识别改善 ADHD 护理的机遇"))
+                    ),
                     
-                    # # Example result image
-                    # # Caption for the image
-                    # tags$img(
-                    #   src = "img/results_image1.png",   # Path to the image (relative to 'www' folder or app directory)
-                    #   width = "80%",                    # Set image width to 80% of the parent container (responsive scaling)
-                    # 
-                    #   style = "
-                    #     display:block;                             /* Make the image behave as a block element (ensures it respects margin settings) */
-                    #     margin-left:auto; margin-right:auto;       /* Horizontally center the image using automatic left/right margins */
-                    #     margin-top:20px; margin-bottom:10px;       /* Add spacing above (20px) and below (10px) the image */
-                    #     box-shadow: 2px 2px 10px rgba(0,0,0,0.1);  /* Add a subtle shadow effect for better visual separation */
-                    #   "
-                    # ),
-                    # # Caption for the image, centered below the image
-                    # p(
-                    #   em("Figure 1: The result images"),  # The caption text in italic style (using 'em' tag)
-                    # 
-                    #   style = "
-                    #     text-align: center;                        /* Center-align the caption text below the image */
-                    #     font-style: italic;                        /* Make the text italic (redundant here since 'em' is already italic, but ensures compatibility) */
-                    #     margin-top: 5px; margin-bottom: 20px;      /* Add spacing: small gap (5px) above caption, larger space (20px) below caption */
-                    #   "
-                    # ),
-                    # 
-                    # # Result summary paragraph
-                    # p(
-                    #   span("Replace the text with the result finding - ",
-                    #        style = "color: #2E86C1; font-size: 18px; font-family: Arial, sans-serif;"),
-                    # 
-                    #   span("this part is bold", style = "font-weight: bold; color: #27AE60;"),
-                    # 
-                    #   span(", this part is italic", style = "font-style: italic; color: #AF7AC5;"),
-                    # 
-                    #   span(", this part is bold & italic", style = "font-weight: bold; font-style: italic; color: #E74C3C; font-size: 16px;"),
-                    # 
-                    #   span(", this part is larger font", style = "font-size: 22px; color: #F39C12;")
-                    # )
+                    br(),
                     
+                    h4("📊 数据概览"),
+                    fluidRow(
+                      column(4,
+                             div(style = "text-align: center; padding: 20px; background-color: #e8f4fd; border-radius: 10px;",
+                                 h3(textOutput("total_respondents")),
+                                 p("总受访者数")
+                             )
+                      ),
+                      column(4,
+                             div(style = "text-align: center; padding: 20px; background-color: #f0f8e8; border-radius: 10px;",
+                                 h3(textOutput("avg_age")),
+                                 p("平均年龄")
+                             )
+                      ),
+                      column(4,
+                             div(style = "text-align: center; padding: 20px; background-color: #fff8e8; border-radius: 10px;",
+                                 h3(textOutput("completion_rate")),
+                                 p("问卷完成率")
+                             )
+                      )
+                    )
                 )
               )
       ),
       
-      tabItem(tabName = "tab-2023",
+      # 数据概览页
+      tabItem(tabName = "tab-overview",
               fluidPage(
-                tabsetPanel(id = "data_view_mode", type = "tabs",
+                tabsetPanel(id = "overview_mode", type = "tabs",
                             
-                            tabPanel("Plot Form",
-                                     sidebarLayout(
-                                       sidebarPanel(width = 3,
-                                                    selectInput("plot_main_region", "Select Main Region:", choices = unique(health_region_main$Area)),
-                                                    uiOutput("subregion_selector"),
-                                                    radioButtons("compare_mode", "Comparison Mode:",
-                                                                 choices = c("Overall" = "total", "By Gender" = "gender", "By Ethnicity" = "ethnicity")),
-                                                    uiOutput("plot_option_selector"),
-                                       ),
-                                       mainPanel(
-                                         div(style = "height: calc(100vh - 100px);",
-                                             plotlyOutput("bar_plot", height = "100%")
-                                         )
-                                       )
-                                     )
-                            ),
-                            tabPanel("Table Form",
+                            tabPanel("数据表格",
                                      div(style = "text-align: center;",
-                                         h2("2023 All New Zealand health region Data")
+                                         h2("ADHD 研究数据概览")
                                      ),
                                      fluidRow(
                                        column(4,
-                                              selectInput("region_select", "Select Region:", choices = health_region_list)
+                                              selectInput("filter_column", "选择筛选列:", 
+                                                         choices = c("全部", categorical_cols))
+                                       ),
+                                       column(4,
+                                              uiOutput("filter_value_selector")
+                                       ),
+                                       column(4,
+                                              downloadButton("download_data", "下载数据")
                                        )
                                      ),
                                      fluidRow(
                                        column(12,
-                                              dataTableOutput("region_table")
+                                              dataTableOutput("data_table")
+                                       )
+                                     )
+                            ),
+                            
+                            tabPanel("数据质量",
+                                     fluidRow(
+                                       column(6,
+                                              h3("缺失值分析"),
+                                              plotlyOutput("missing_plot")
+                                       ),
+                                       column(6,
+                                              h3("数据类型分布"),
+                                              plotlyOutput("data_type_plot")
+                                       )
+                                     ),
+                                     fluidRow(
+                                       column(12,
+                                              h3("数据质量报告"),
+                                              verbatimTextOutput("quality_report")
                                        )
                                      )
                             )
@@ -301,6 +175,67 @@ ui <- dashboardPage(
               )
       ),
       
+      # 统计分析页
+      tabItem(tabName = "tab-analysis",
+              fluidPage(
+                tabsetPanel(id = "analysis_mode", type = "tabs",
+                            
+                            tabPanel("描述性统计",
+                                     sidebarLayout(
+                                       sidebarPanel(width = 3,
+                                                    selectInput("analysis_variable", "选择分析变量:", 
+                                                               choices = numeric_cols),
+                                                    selectInput("group_by_var", "分组变量 (可选):", 
+                                                               choices = c("无", categorical_cols)),
+                                                    radioButtons("plot_type", "图表类型:",
+                                                                 choices = c("直方图" = "histogram", 
+                                                                            "箱线图" = "boxplot",
+                                                                            "密度图" = "density"))
+                                       ),
+                                       mainPanel(
+                                         div(style = "height: calc(100vh - 100px);",
+                                             plotlyOutput("analysis_plot", height = "100%")
+                                         )
+                                       )
+                                     )
+                            ),
+                            
+                            tabPanel("相关性分析",
+                                     fluidRow(
+                                       column(4,
+                                              selectInput("corr_var1", "变量 1:", choices = numeric_cols),
+                                              selectInput("corr_var2", "变量 2:", choices = numeric_cols)
+                                       ),
+                                       column(8,
+                                              h3("相关性分析结果"),
+                                              verbatimTextOutput("correlation_result"),
+                                              plotlyOutput("correlation_plot")
+                                       )
+                                     )
+                            ),
+                            
+                            tabPanel("分组比较",
+                                     sidebarLayout(
+                                       sidebarPanel(width = 3,
+                                                    selectInput("compare_var", "比较变量:", choices = numeric_cols),
+                                                    selectInput("group_var", "分组变量:", choices = categorical_cols),
+                                                    radioButtons("test_type", "统计检验:",
+                                                                 choices = c("t检验" = "t_test", 
+                                                                            "方差分析" = "anova",
+                                                                            "非参数检验" = "wilcox"))
+                                       ),
+                                       mainPanel(
+                                         div(style = "height: calc(100vh - 100px);",
+                                             plotlyOutput("comparison_plot", height = "100%")
+                                         )
+                                       )
+                                     )
+                            )
+                )
+              )
+      ),
+      
+      # 地理分布页
       tabItem(tabName = "tab-map",
               fluidPage(
                 tags$head(tags$style(HTML("
@@ -329,630 +264,206 @@ ui <- dashboardPage(
   )
 )
 
-
-# Define server logic to handle map rendering and user interaction, and show full table on data tab
+# 服务器逻辑
 server <- function(input, output, session) {
   
-  # Render table in First page
-  output$unpaid_category_table <- renderTable({
-    data.frame(
-      Code = c(3, 5),
-      Category = c(
-        "Looking after a member of own household who is ill or has a disability",
-        "Helping someone who is ill or has a disability who does not live in own household"
-      )
-    )
+  # 首页统计信息
+  output$total_respondents <- renderText({
+    nrow(adhd_clean)
   })
   
-  
-  # Render full region table in the 2023 Data tab (not filtered)
-  # Render table based on selected region
-  output$region_table <- renderDataTable({
-    if (input$region_select == "All New Zealand Main Health Region") {
-      datatable(health_region_age_data, options = list(scrollX = TRUE))
+  output$avg_age <- renderText({
+    # 假设有年龄列，根据实际数据调整
+    age_col <- names(adhd_clean)[grepl("age|年龄", names(adhd_clean), ignore.case = TRUE)]
+    if (length(age_col) > 0) {
+      avg_age <- mean(as.numeric(adhd_clean[[age_col[1]]]), na.rm = TRUE)
+      round(avg_age, 1)
     } else {
-      selected <- input$region_select
-      index <- which(health_region_age_data$Area == selected)
-      sub_region_rows <- index
-      for (i in (index + 1):nrow(health_region_age_data)) {
-        if (startsWith(health_region_age_data$Area[i], "·")) {
-          sub_region_rows <- c(sub_region_rows, i)
-        } else {
-          break
-        }
-      }
-      datatable(health_region_age_data[sub_region_rows, ], options = list(scrollX = TRUE))
+      "N/A"
     }
   })
   
-  # select the subregion
-  output$subregion_selector <- renderUI({
-    req(input$plot_main_region)
-    index <- which(health_region_data$Area == input$plot_main_region)
-    sub_names <- c(input$plot_main_region)
-    for (i in (index + 1):nrow(health_region_data)) {
-      if (startsWith(health_region_data$Area[i], "·")) {
-        sub_names <- c(sub_names, health_region_data$Area[i])
-      } else {
-        break
-      }
-    }
-    selectInput("plot_subregion", "Select Area (Main or Sub):", choices = sub_names)
+  output$completion_rate <- renderText({
+    # 计算问卷完成率
+    total_questions <- ncol(adhd_clean)
+    completion_rates <- apply(adhd_clean, 1, function(row) {
+      sum(!is.na(row)) / total_questions
+    })
+    paste0(round(mean(completion_rates, na.rm = TRUE) * 100, 1), "%")
   })
   
-  # option selection after Select the comparison mode
-  output$plot_option_selector <- renderUI({
-    if (input$compare_mode == "gender") {
-      selectInput("ethnicity_filter", "Select Ethnicity:",
-                  choices = c("All" = "all", "European" = "euro", "Māori" = "maori", "Pacific Peoples" = "paci", "Asian" = "asia"))
-    } else if (input$compare_mode == "ethnicity") {
-      selectInput("gender_filter", "Select Gender:",
-                  choices = c("Total" = "total", "Male" = "male", "Female" = "female", "Other gender" = "another"))
+  # 数据表格
+  output$filter_value_selector <- renderUI({
+    if (input$filter_column != "全部") {
+      unique_values <- unique(adhd_clean[[input$filter_column]])
+      selectInput("filter_value", "选择值:", choices = c("全部", unique_values))
+    }
+  })
+  
+  filtered_data <- reactive({
+    data <- adhd_clean
+    if (input$filter_column != "全部" && !is.null(input$filter_value) && input$filter_value != "全部") {
+      data <- data[data[[input$filter_column]] == input$filter_value, ]
+    }
+    data
+  })
+  
+  output$data_table <- renderDataTable({
+    datatable(filtered_data(), 
+              options = list(scrollX = TRUE, pageLength = 10),
+              filter = "top")
+  })
+  
+  # 下载数据
+  output$download_data <- downloadHandler(
+    filename = function() {
+      paste("adhd_data_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(filtered_data(), file, row.names = FALSE)
+    }
+  )
+  
+  # 缺失值分析
+  output$missing_plot <- renderPlotly({
+    missing_counts <- colSums(is.na(adhd_clean))
+    missing_percent <- (missing_counts / nrow(adhd_clean)) * 100
+    
+    plot_ly(x = names(missing_percent), y = missing_percent, type = 'bar',
+            marker = list(color = '#ff7f0e')) %>%
+      layout(title = "各列缺失值百分比",
+             xaxis = list(title = "变量名", tickangle = 45),
+             yaxis = list(title = "缺失值百分比 (%)"))
+  })
+  
+  # 数据类型分布
+  output$data_type_plot <- renderPlotly({
+    data_types <- sapply(adhd_clean, class)
+    type_counts <- table(data_types)
+    
+    plot_ly(labels = names(type_counts), values = type_counts, type = 'pie') %>%
+      layout(title = "数据类型分布")
+  })
+  
+  # 数据质量报告
+  output$quality_report <- renderPrint({
+    cat("数据质量报告\n")
+    cat("============\n\n")
+    cat("总行数:", nrow(adhd_clean), "\n")
+    cat("总列数:", ncol(adhd_clean), "\n")
+    cat("数值型变量数:", length(numeric_cols), "\n")
+    cat("分类型变量数:", length(categorical_cols), "\n")
+    cat("总缺失值数:", sum(is.na(adhd_clean)), "\n")
+    cat("缺失值比例:", round(sum(is.na(adhd_clean)) / (nrow(adhd_clean) * ncol(adhd_clean)) * 100, 2), "%\n")
+  })
+  
+  # 描述性统计分析
+  output$analysis_plot <- renderPlotly({
+    req(input$analysis_variable)
+    
+    var_data <- adhd_clean[[input$analysis_variable]]
+    var_data <- as.numeric(var_data)
+    var_data <- var_data[!is.na(var_data)]
+    
+    if (input$plot_type == "histogram") {
+      plot_ly(x = var_data, type = 'histogram', nbinsx = 30) %>%
+        layout(title = paste("分布图:", input$analysis_variable),
+               xaxis = list(title = input$analysis_variable),
+               yaxis = list(title = "频数"))
+    } else if (input$plot_type == "boxplot") {
+      plot_ly(y = var_data, type = 'box') %>%
+        layout(title = paste("箱线图:", input$analysis_variable),
+               yaxis = list(title = input$analysis_variable))
+    } else if (input$plot_type == "density") {
+      density_data <- density(var_data)
+      plot_ly(x = density_data$x, y = density_data$y, type = 'scatter', mode = 'lines') %>%
+        layout(title = paste("密度图:", input$analysis_variable),
+               xaxis = list(title = input$analysis_variable),
+               yaxis = list(title = "密度"))
+    }
+  })
+  
+  # 相关性分析
+  output$correlation_result <- renderPrint({
+    req(input$corr_var1, input$corr_var2)
+    
+    var1 <- as.numeric(adhd_clean[[input$corr_var1]])
+    var2 <- as.numeric(adhd_clean[[input$corr_var2]])
+    
+    # 移除缺失值
+    complete_cases <- complete.cases(var1, var2)
+    var1 <- var1[complete_cases]
+    var2 <- var2[complete_cases]
+    
+    if (length(var1) > 0) {
+      cor_result <- cor.test(var1, var2)
+      cat("皮尔逊相关系数:", round(cor_result$estimate, 3), "\n")
+      cat("p值:", round(cor_result$p.value, 4), "\n")
+      cat("95%置信区间:", round(cor_result$conf.int, 3), "\n")
     } else {
-      NULL
+      cat("数据不足，无法计算相关性")
     }
   })
   
-  
-  output$bar_plot <- renderPlotly({
-    req(input$plot_subregion)
-    df <- health_region_data %>% filter(Area == input$plot_subregion)
+  output$correlation_plot <- renderPlotly({
+    req(input$corr_var1, input$corr_var2)
     
-    if (input$compare_mode == "total") {
-      Count <- c(as.numeric(df$household_total), as.numeric(df$not_household_total))
-      AllCount <- c(as.numeric(df$allage_household_total), as.numeric(df$allage_not_household_total))
-      
-      Text <- paste0("Young carers in this group: ", Count, "<br>",
-                     "Total aged 15 to 29 in this group: ", AllCount, "<br>(", 
-                     ifelse(AllCount > 0, round(Count / AllCount * 100, 1), NA), "% of young people in this group are carers for selected household)")
-      
-      data <- data.frame(
-        Category = c("Care for household member", "Care for non-household person"),
-        Count = c(as.numeric(df$household_total), as.numeric(df$not_household_total))
-      )
-      
-      plot_ly(data, x = ~Category, y = ~Count, type = 'bar',
-              text = ~Count, textposition = 'outside',
-              hovertext = ~Text, hoverinfo = 'text',
-              marker = list(color = c("#FDBE85", "#FD8D3C"))) %>%
-        layout(title = paste("New Zealand Health Region Young Carers Unpaid activities -", input$plot_subregion),
-               margin = list(t = 100), yaxis = list(title = "Count"), xaxis = list(title = ""))
-      
-    } else if (input$compare_mode == "gender") {
-      ethnicity_prefix <- switch(input$ethnicity_filter,
-                                 "euro" = "Euro_",
-                                 "maori" = "Maori_",
-                                 "paci" = "Paci_",
-                                 "asia" = "Asia_",
-                                 "all" = "")
-      
-      Count <- c(
-        as.numeric(df[[paste0(ethnicity_prefix, "household_male")]]),
-        as.numeric(df[[paste0(ethnicity_prefix, "not_household_male")]]),
-        as.numeric(df[[paste0(ethnicity_prefix, "household_female")]]),
-        as.numeric(df[[paste0(ethnicity_prefix, "not_household_female")]]),
-        as.numeric(df[[paste0(ethnicity_prefix, "household_another")]]),
-        as.numeric(df[[paste0(ethnicity_prefix, "not_household_another")]])
-      )
-      
-      AllCount <- c(
-        as.numeric(df[[paste0(ethnicity_prefix, "allage_household_male")]]),
-        as.numeric(df[[paste0(ethnicity_prefix, "allage_not_household_male")]]),
-        as.numeric(df[[paste0(ethnicity_prefix, "allage_household_female")]]),
-        as.numeric(df[[paste0(ethnicity_prefix, "allage_not_household_female")]]),
-        as.numeric(df[[paste0(ethnicity_prefix, "allage_household_another")]]),
-        as.numeric(df[[paste0(ethnicity_prefix, "allage_not_household_another")]])
-      )
-      
-      Text <- paste0("Young carers in this group: ", Count, "<br>",
-                     "Total aged 15 to 29 in this group: ", AllCount, "<br>(", 
-                     ifelse(AllCount > 0, round(Count / AllCount * 100, 1), NA), "% of young people in this group are carers for selected household)")
-      
-      data <- data.frame(
-        Gender = rep(c("Male", "Female", "Other Gender"), each = 2),
-        Category = rep(c("Household", "Non-Household"), times = 3),
-        Count = Count,
-        Text = Text
-      )
-      
-      plot_ly(data, x = ~Gender, y = ~Count, color = ~Category, type = 'bar',
-              text = ~Count, textposition = 'outside',
-              textfont = list(color = "black", size = 12),
-              colors = c("#FDBE85", "#FD8D3C"),
-              hovertext = ~Text, hoverinfo = 'text', barmode = 'group') %>%
-        layout(title = paste("Young Carers by Gender -", input$plot_subregion),
-               margin = list(t = 100), yaxis = list(title = "Count"), xaxis = list(title = ""))
-      
-    } else if (input$compare_mode == "ethnicity") {
-      gender_suffix <- switch(input$gender_filter,
-                              "total" = "_total",
-                              "male" = "_male",
-                              "female" = "_female",
-                              "another" = "_another")
-      
-      Count <- c(
-        as.numeric(df[[paste0("Euro_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Euro_not_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Maori_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Maori_not_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Paci_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Paci_not_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Asia_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Asia_not_household", gender_suffix)]])
-      )
-      
-      AllCount <- c(
-        as.numeric(df[[paste0("Euro_allage_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Euro_allage_not_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Maori_allage_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Maori_allage_not_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Paci_allage_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Paci_allage_not_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Asia_allage_household", gender_suffix)]]),
-        as.numeric(df[[paste0("Asia_allage_not_household", gender_suffix)]])
-      )
-      
-      Text <- paste0("Young carers in this group: ", Count, "<br>",
-                     "Total aged 15 to 29 in this group: ", AllCount, "<br>(", 
-                     ifelse(AllCount > 0, round(Count / AllCount * 100, 1), NA), "% of young people in this group are carers for selected household)")
-      
-      data <- data.frame(
-        Ethnicity = rep(c("European", "Māori", "Pacific Peoples", "Asian"), each = 2),
-        Category = rep(c("Household", "Non-Household"), times = 4),
-        Count = Count,
-        Text = Text
-      )
-      
-      plot_ly(data, x = ~Ethnicity, y = ~Count, color = ~Category, type = 'bar',
-              text = ~Count, textposition = 'outside',
-              textfont = list(color = "black", size = 12),
-              colors = c("#FDBE85", "#FD8D3C"),
-              hovertext = ~Text, hoverinfo = 'text', barmode = 'group') %>%
-        layout(title = paste("Young Carers by Ethnicity -", input$plot_subregion),
-               margin = list(t = 100), yaxis = list(title = "Count"), xaxis = list(title = ""))
-    } 
+    var1 <- as.numeric(adhd_clean[[input$corr_var1]])
+    var2 <- as.numeric(adhd_clean[[input$corr_var2]])
     
+    complete_cases <- complete.cases(var1, var2)
+    var1 <- var1[complete_cases]
+    var2 <- var2[complete_cases]
+    
+    if (length(var1) > 0) {
+      plot_ly(x = var1, y = var2, type = 'scatter', mode = 'markers') %>%
+        layout(title = paste("相关性散点图:", input$corr_var1, "vs", input$corr_var2),
+               xaxis = list(title = input$corr_var1),
+               yaxis = list(title = input$corr_var2))
+    }
   })
   
-  # Store the ID of the region clicked on the map
-  clicked_region <- reactiveVal(NULL)
-  # Control whether the floating information panel is visible
-  show_info <- reactiveVal(TRUE)
+  # 分组比较
+  output$comparison_plot <- renderPlotly({
+    req(input$compare_var, input$group_var)
+    
+    compare_data <- adhd_clean %>%
+      select(!!sym(input$compare_var), !!sym(input$group_var)) %>%
+      filter(!is.na(!!sym(input$compare_var)), !is.na(!!sym(input$group_var)))
+    
+    if (input$plot_type == "boxplot") {
+      plot_ly(compare_data, x = ~get(input$group_var), y = ~get(input$compare_var), 
+              type = 'box', color = ~get(input$group_var)) %>%
+        layout(title = paste("分组比较:", input$compare_var, "by", input$group_var),
+               xaxis = list(title = input$group_var),
+               yaxis = list(title = input$compare_var))
+    } else {
+      # 默认显示箱线图
+      plot_ly(compare_data, x = ~get(input$group_var), y = ~get(input$compare_var), 
+              type = 'box', color = ~get(input$group_var)) %>%
+        layout(title = paste("分组比较:", input$compare_var, "by", input$group_var),
+               xaxis = list(title = input$group_var),
+               yaxis = list(title = input$compare_var))
+    }
+  })
   
-  # Render the base Leaflet map with New Zealand region polygons
+  # 地图相关（简化版）
   output$nz_map <- renderLeaflet({
-    leaflet(data = nz_shape, options = leafletOptions(minZoom = 5, maxZoom = 18)) %>%
-      setMaxBounds(lng1 = 155, lat1 = -55, lng2 = 190, lat2 = -25) %>%
+    leaflet() %>%
+      setView(lng = 174.7645, lat = -40.9006, zoom = 5) %>%
       addProviderTiles("CartoDB.Positron") %>%
-      addPolygons(
-        fillColor = "#FFFACD",
-        fillOpacity = 0.2,
-        color = "black",
-        weight = 1,
-        label = map_label,
-        layerId = map_layerId,
-        highlightOptions = highlightOptions(color = "blue", weight = 2, bringToFront = TRUE)
-      )
+      addMarkers(lng = 174.7645, lat = -40.9006, 
+                 popup = "新西兰 ADHD 研究数据收集点")
   })
   
-  # Handle map shape click: store clicked region and show info panel
-  observeEvent(input$nz_map_shape_click, {
-    clicked_region(input$nz_map_shape_click$id)
-    show_info(TRUE)
-  })
-  
-  # Handle close button on the floating box: hide info panel
-  observeEvent(input$hide_box, show_info(FALSE))
-  
-  
-  # Dynamically render the floating info box showing clicked region name
   output$map_info_box <- renderUI({
-    req(clicked_region(), show_info())
-    
     absolutePanel(class = "floating-box", draggable = TRUE,
-                  actionButton("hide_box", "✖", style = "float: right; margin-bottom: 5px;"),
-                  h4(strong("Region Information")),
-                  p(HTML(paste0("<strong>Selected Region:</strong> <span style='color: red; font-weight: bold;'>", clicked_region(), "</span>"))),
-                  
-                  radioButtons("map_mode", "View Mode:",
-                               choices = c(
-                                 "Compare the young carers by unpaid activity type" = "type",
-                                 "Compare the young carers by gender" = "gender",
-                                 "Compare the young carers by ethnicity" = "ethnicity"),
-                               selected = "type"),
-                  uiOutput("map_sub_selector"),
-                  
-                  actionButton("compare_region_btn", "Compare with another region", style = "margin-top: 10px;"),
-                  conditionalPanel(
-                    condition = "input.compare_region_btn % 2 == 1",
-                    selectInput("second_region", "Select region to compare:",
-                                choices = region_data$Area[grepl("Region$", region_data$Area)],
-                                selected = clicked_region())
-                  ),
-                  
-                  br(),
-                  div(style = "height: calc(100vh - 300px);",
-                      plotlyOutput("map_pie", height = "100%"))
+                  h4("地理分布信息"),
+                  p("ADHD 研究数据的地理分布分析将在此显示。"),
+                  p("点击地图上的标记查看详细信息。")
     )
-  })
-  
-  
-  # selection in infobox
-  output$map_sub_selector <- renderUI({
-    if (input$map_mode == "type") {
-      tagList(
-        selectInput("map_gender", "Select the gender:",
-                    choices = c("Overall" = "overall", "Male" = "male", "Female" = "female", "Other gender" = "another"),
-                    selected = "overall"),
-        selectInput("map_ethnicity", "Select the ethnicity:",
-                    choices = c("Overall" = "overall", "European" = "euro", "Māori" = "maori", "Pacific Peoples" = "paci", "Asian" = "asia"),
-                    selected = "overall")
-      )
-    } else if (input$map_mode == "gender") {
-      tagList(
-        selectInput("map_activity", "Select the unpaid activities type:",
-                    choices = c("Overall" = "overall",
-                                "Care for household member" = "household",
-                                "Care for non-household person" = "nonhousehold"),
-                    selected = "Overall"),
-        selectInput("map_ethnicity", "Select the ethnicity:",
-                    choices = c("Overall" = "overall", "European" = "euro", "Māori" = "maori", "Pacific Peoples" = "paci", "Asian" = "asia"),
-                    selected = "overall")
-      )
-    } else if (input$map_mode == "ethnicity") {
-      tagList(
-        selectInput("map_activity", "Select the unpaid activities type:",
-                    choices = c("Overall" = "overall",
-                                "Care for household member" = "household",
-                                "Care for non-household person" = "nonhousehold"),
-                    selected = "Overall"),
-        selectInput("map_gender", "Select the gender:",
-                    choices = c("Overall" = "overall", "Male" = "male", "Female" = "female", "Other gender" = "another"),
-                    selected = "overall")
-      )
-    }
-  })
-  
-  
-  
-  
-  
-  # pie plot in the infobox of Map
-  output$map_pie <- renderPlotly({
-    `%_%` <- function(a, b) paste0(a, b)
-    req(clicked_region())
-    df1 <- region_data %>% filter(Area == clicked_region())
-    if (nrow(df1) == 0) return(NULL)
-    
-    compare_mode <- input$compare_region_btn %% 2 == 1
-    has_second <- !is.null(input$second_region) && input$second_region != ""
-    df2 <- if (has_second) region_data %>% filter(Area == input$second_region) else NULL
-    
-    if (!compare_mode) {
-      # Pie plot
-      if (input$map_mode == "type") {
-        gender <- input$map_gender
-        ethnicity <- input$map_ethnicity
-        if (is.null(ethnicity) || length(ethnicity) != 1) return(NULL)
-        prefix <- switch(ethnicity,
-                         "euro" = "Euro_",
-                         "maori" = "Maori_",
-                         "paci" = "Paci_",
-                         "asia" = "Asia_",
-                         "overall" = "")
-        
-        values <- switch(gender,
-                         "overall" = c("Care for household member" = safe_numeric(df1[[paste0(prefix, "household_total")]]),
-                                       "Care for non-household person" = safe_numeric(df1[[paste0(prefix, "not_household_total")]])),
-                         "male" = c("Care for household member" = safe_numeric(df1[[paste0(prefix, "household_male")]]),
-                                    "Care for non-household person" = safe_numeric(df1[[paste0(prefix, "not_household_male")]])),
-                         "female" = c("Care for household member" = safe_numeric(df1[[paste0(prefix, "household_female")]]),
-                                      "Care for non-household person" = safe_numeric(df1[[paste0(prefix, "not_household_female")]])),
-                         "another" = c("Care for household member" = safe_numeric(df1[[paste0(prefix, "household_another")]]),
-                                     "Care for non-household person" = safe_numeric(df1[[paste0(prefix, "not_household_another")]]))
-        )
-        labels <- names(values)
-      } else if (input$map_mode == "gender") {
-        activity <- input$map_activity
-        ethnicity <- input$map_ethnicity
-        prefix <- switch(ethnicity,
-                         "euro" = "Euro_",
-                         "maori" = "Maori_",
-                         "paci" = "Paci_",
-                         "asia" = "Asia_",
-                         "overall" = "")
-        
-        values <- switch(activity,
-                         "overall" = c("Male" = safe_numeric(df1[[paste0(prefix, "household_male")]]) + safe_numeric(df1[[paste0(prefix, "not_household_male")]]),
-                                       "Female" = safe_numeric(df1[[paste0(prefix, "household_female")]]) + safe_numeric(df1[[paste0(prefix, "not_household_female")]]),
-                                       "Other gender" = safe_numeric(df1[[paste0(prefix, "household_another")]]) + safe_numeric(df1[[paste0(prefix, "not_household_another")]])),
-                         "household" = c("Male" = safe_numeric(df1[[paste0(prefix, "household_male")]]),
-                                         "Female" = safe_numeric(df1[[paste0(prefix, "household_female")]]),
-                                         "Other gender" = safe_numeric(df1[[paste0(prefix, "household_another")]])),
-                         "nonhousehold" = c("Male" = safe_numeric(df1[[paste0(prefix, "not_household_male")]]),
-                                            "Female" = safe_numeric(df1[[paste0(prefix, "not_household_female")]]),
-                                            "Other gender" = safe_numeric(df1[[paste0(prefix, "not_household_another")]]))
-        )
-        labels <- names(values)
-      } else if (input$map_mode == "ethnicity") {
-        activity <- input$map_activity
-        gender <- input$map_gender
-        suffix <- switch(gender,
-                         "overall" = "_total",
-                         "total" = "_total",
-                         "male" = "_male",
-                         "female" = "_female",
-                         "another" = "_another")
-        
-        
-        values <- switch(activity,
-                         "overall" = c("European" = safe_numeric(df1[["Euro_household" %_% suffix]]) + safe_numeric(df1[["Euro_not_household" %_% suffix]]),
-                                       "Māori" = safe_numeric(df1[["Maori_household" %_% suffix]]) + safe_numeric(df1[["Maori_not_household" %_% suffix]]),
-                                       "Pacific Peoples" = safe_numeric(df1[["Paci_household" %_% suffix]]) + safe_numeric(df1[["Paci_not_household" %_% suffix]]),
-                                       "Asian" = safe_numeric(df1[["Asia_household" %_% suffix]]) + safe_numeric(df1[["Asia_not_household" %_% suffix]])),
-                         "household" = c("European" = safe_numeric(df1[[paste0("Euro_household", suffix)]]),
-                                         "Māori" = safe_numeric(df1[[paste0("Maori_household", suffix)]]),
-                                         "Pacific Peoples" = safe_numeric(df1[[paste0("Paci_household", suffix)]]),
-                                         "Asian" = safe_numeric(df1[[paste0("Asia_household", suffix)]])),
-                         "nonhousehold" = c("European" = safe_numeric(df1[[paste0("Euro_not_household", suffix)]]),
-                                            "Māori" = safe_numeric(df1[[paste0("Maori_not_household", suffix)]]),
-                                            "Pacific Peoples" = safe_numeric(df1[[paste0("Paci_not_household", suffix)]]),
-                                            "Asian" = safe_numeric(df1[[paste0("Asia_not_household", suffix)]]))
-        )
-        labels <- names(values)
-        
-      }
-      
-
-      
-      AllValues <- switch(input$map_mode,
-                          "type" = {
-                            switch(gender,
-                                   "overall" = c("Care for household member" = safe_numeric(df1[[paste0(prefix, "allage_household_total")]]),
-                                                 "Care for non-household person" = safe_numeric(df1[[paste0(prefix, "allage_not_household_total")]])),
-                                   "male" = c("Care for household member" = safe_numeric(df1[[paste0(prefix, "allage_household_male")]]),
-                                              "Care for non-household person" = safe_numeric(df1[[paste0(prefix, "allage_not_household_male")]])),
-                                   "female" = c("Care for household member" = safe_numeric(df1[[paste0(prefix, "allage_household_female")]]),
-                                                "Care for non-household person" = safe_numeric(df1[[paste0(prefix, "allage_not_household_female")]])),
-                                   "other" = c("Care for household member" = safe_numeric(df1[[paste0(prefix, "allage_household_another")]]),
-                                               "Care for non-household person" = safe_numeric(df1[[paste0(prefix, "allage_not_household_another")]]))
-                            )
-                          },
-                          "gender" = {
-                            switch(activity,
-                                   "overall" = c("Male" = safe_numeric(df1[[paste0(prefix, "allage_household_male")]]) + safe_numeric(df1[[paste0(prefix, "allage_not_household_male")]]),
-                                                 "Female" = safe_numeric(df1[[paste0(prefix, "allage_household_female")]]) + safe_numeric(df1[[paste0(prefix, "allage_not_household_female")]]),
-                                                 "Other gender" = safe_numeric(df1[[paste0(prefix, "allage_household_another")]]) + safe_numeric(df1[[paste0(prefix, "allage_not_household_another")]])),
-                                   "household" = c("Male" = safe_numeric(df1[[paste0(prefix, "allage_household_male")]]),
-                                                   "Female" = safe_numeric(df1[[paste0(prefix, "allage_household_female")]]),
-                                                   "Other gender" = safe_numeric(df1[[paste0(prefix, "allage_household_another")]])),
-                                   "nonhousehold" = c("Male" = safe_numeric(df1[[paste0(prefix, "allage_not_household_male")]]),
-                                                      "Female" = safe_numeric(df1[[paste0(prefix, "allage_not_household_female")]]),
-                                                      "Other gender" = safe_numeric(df1[[paste0(prefix, "allage_not_household_another")]]))
-                            )
-                          },
-                          "ethnicity" = {
-                            switch(activity,
-                                   "overall" = c("European" = safe_numeric(df1[["Euro_allage_household" %_% suffix]]) + safe_numeric(df1[["Euro_allage_not_household" %_% suffix]]),
-                                                 "Māori" = safe_numeric(df1[["Maori_allage_household" %_% suffix]]) + safe_numeric(df1[["Maori_allage_not_household" %_% suffix]]),
-                                                 "Pacific Peoples" = safe_numeric(df1[["Paci_allage_household" %_% suffix]]) + safe_numeric(df1[["Paci_allage_not_household" %_% suffix]]),
-                                                 "Asian" = safe_numeric(df1[["Asia_allage_household" %_% suffix]]) + safe_numeric(df1[["Asia_allage_not_household" %_% suffix]])),
-                                   "household" = c("European" = safe_numeric(df1[["Euro_allage_household" %_% suffix]]),
-                                                   "Māori" = safe_numeric(df1[["Maori_allage_household" %_% suffix]]),
-                                                   "Pacific Peoples" = safe_numeric(df1[["Paci_allage_household" %_% suffix]]),
-                                                   "Asian" = safe_numeric(df1[["Asia_allage_household" %_% suffix]])),
-                                   "nonhousehold" = c("European" = safe_numeric(df1[["Euro_allage_not_household" %_% suffix]]),
-                                                      "Māori" = safe_numeric(df1[["Maori_allage_not_household" %_% suffix]]),
-                                                      "Pacific Peoples" = safe_numeric(df1[["Paci_allage_not_household" %_% suffix]]),
-                                                      "Asian" = safe_numeric(df1[["Asia_allage_not_household" %_% suffix]]))
-                            )
-                          }
-      )  
-      values <- as.numeric(values)
-      hover_text <- paste0("Young carers in this group: ", values,
-                           "<br> Share of this pie plot: ", round(values / sum(values, na.rm = TRUE) * 100, 1), "%",
-                           "<br> Total aged 15 to 29 in this group: ", AllValues, 
-                           " <br> (", ifelse(AllValues > 0, round(values / AllValues * 100, 1), NA), "% of young people in this group are carers for selected household)")
-      
-      plot_ly(
-        labels = labels,
-        values = values,
-        type = "pie",
-        text = hover_text,
-        textinfo = "value+percent",
-        textposition = "auto",
-        hoverinfo = "text"
-      ) %>%
-        layout(showlegend = TRUE, legend = list(x = 1, y = 0.9))
-      
-    } else {
-      
-      
-      # Bar plot for compare
-      if (input$map_mode == "type") {
-        gender <- input$map_gender
-        ethnicity <- input$map_ethnicity
-        prefix <- switch(ethnicity,
-                         "euro" = "Euro_",
-                         "maori" = "Maori_",
-                         "paci" = "Paci_",
-                         "asia" = "Asia_",
-                         "overall" = "")
-        
-        get_values <- function(df) {
-          switch(gender,
-                 "overall" = c("Care for household member" = safe_numeric(df[[paste0(prefix, "household_total")]]),
-                               "Care for non-household person" = safe_numeric(df[[paste0(prefix, "not_household_total")]])),
-                 "male" = c("Care for household member" = safe_numeric(df[[paste0(prefix, "household_male")]]),
-                            "Care for non-household person" = safe_numeric(df[[paste0(prefix, "not_household_male")]])),
-                 "female" = c("Care for household member" = safe_numeric(df[[paste0(prefix, "household_female")]]),
-                              "Care for non-household person" = safe_numeric(df[[paste0(prefix, "not_household_female")]])),
-                 "another" = c("Care for household member" = safe_numeric(df[[paste0(prefix, "household_another")]]),
-                             "Care for non-household person" = safe_numeric(df[[paste0(prefix, "not_household_another")]]))
-          )
-        }
-        
-      } else if (input$map_mode == "gender") {
-        activity <- input$map_activity
-        ethnicity <- input$map_ethnicity
-        prefix <- switch(ethnicity,
-                         "euro" = "Euro_",
-                         "maori" = "Maori_",
-                         "paci" = "Paci_",
-                         "asia" = "Asia_",
-                         "overall" = "")
-        
-        get_values <- function(df) {
-          switch(activity,
-                 "overall" = c("Male" = safe_numeric(df[[paste0(prefix, "household_male")]]) + safe_numeric(df[[paste0(prefix, "not_household_male")]]),
-                               "Female" = safe_numeric(df[[paste0(prefix, "household_female")]]) + safe_numeric(df[[paste0(prefix, "not_household_female")]]),
-                               "Other gender" = safe_numeric(df[[paste0(prefix, "household_another")]]) + safe_numeric(df[[paste0(prefix, "not_household_another")]])),
-                 "household" = c("Male" = safe_numeric(df[[paste0(prefix, "household_male")]]),
-                                 "Female" = safe_numeric(df[[paste0(prefix, "household_female")]]),
-                                 "Other gender" = safe_numeric(df[[paste0(prefix, "household_another")]])),
-                 "nonhousehold" = c("Male" = safe_numeric(df[[paste0(prefix, "not_household_male")]]),
-                                    "Female" = safe_numeric(df[[paste0(prefix, "not_household_female")]]),
-                                    "Other gender" = safe_numeric(df[[paste0(prefix, "not_household_another")]]))
-          )
-        }
-        
-      } else if (input$map_mode == "ethnicity") {
-        activity <- input$map_activity
-        gender <- input$map_gender
-        suffix <- switch(gender,
-                         "total" = "_total",
-                         "overall" = "_total",
-                         "male" = "_male",
-                         "female" = "_female",
-                         "another" = "_another")
-        
-        get_values <- function(df) {
-          switch(activity,
-                 "overall" = c("European" = safe_numeric(df[["Euro_household" %_% suffix]]) + safe_numeric(df[["Euro_not_household" %_% suffix]]),
-                               "Māori" = safe_numeric(df[["Maori_household" %_% suffix]]) + safe_numeric(df[["Maori_not_household" %_% suffix]]),
-                               "Pacific Peoples" = safe_numeric(df[["Paci_household" %_% suffix]]) + safe_numeric(df[["Paci_not_household" %_% suffix]]),
-                               "Asian" = safe_numeric(df[["Asia_household" %_% suffix]]) + safe_numeric(df[["Asia_not_household" %_% suffix]])),
-                 "household" = c("European" = safe_numeric(df[[paste0("Euro_household", suffix)]]),
-                                 "Māori" = safe_numeric(df[[paste0("Maori_household", suffix)]]),
-                                 "Pacific Peoples" = safe_numeric(df[[paste0("Paci_household", suffix)]]),
-                                 "Asian" = safe_numeric(df[[paste0("Asia_household", suffix)]])),
-                 "nonhousehold" = c("European" = safe_numeric(df[[paste0("Euro_not_household", suffix)]]),
-                                    "Māori" = safe_numeric(df[[paste0("Maori_not_household", suffix)]]),
-                                    "Pacific Peoples" = safe_numeric(df[[paste0("Paci_not_household", suffix)]]),
-                                    "Asian" = safe_numeric(df[[paste0("Asia_not_household", suffix)]]))
-          )
-        }
-      }
-      
-      
-      # Retrieve young carers values for the clicked and second regions
-      values1 <- get_values(df1)
-      labels <- names(values1)
-      values2 <- if (has_second) get_values(df2) else NULL
-      
-
-      
-      # Function to retrieve all-age carers values by mode and input
-      get_all_values <- function(df) {
-        if (input$map_mode == "type") {
-          gender <- input$map_gender
-          switch(gender,
-                 "overall" = c("Care for household member" = safe_numeric(df[[paste0(prefix, "allage_household_total")]]),
-                               "Care for non-household person" = safe_numeric(df[[paste0(prefix, "allage_not_household_total")]])),
-                 "male" = c("Care for household member" = safe_numeric(df[[paste0(prefix, "allage_household_male")]]),
-                            "Care for non-household person" = safe_numeric(df[[paste0(prefix, "allage_not_household_male")]])),
-                 "female" = c("Care for household member" = safe_numeric(df[[paste0(prefix, "allage_household_female")]]),
-                              "Care for non-household person" = safe_numeric(df[[paste0(prefix, "allage_not_household_female")]])),
-                 "another" = c("Care for household member" = safe_numeric(df[[paste0(prefix, "allage_household_another")]]),
-                             "Care for non-household person" = safe_numeric(df[[paste0(prefix, "allage_not_household_another")]]))
-          )
-        } else if (input$map_mode == "gender") {
-          switch(activity,
-                 "overall" = c("Male" = safe_numeric(df[[paste0(prefix, "allage_household_male")]]) + safe_numeric(df[[paste0(prefix, "allage_not_household_male")]]),
-                               "Female" = safe_numeric(df[[paste0(prefix, "allage_household_female")]]) + safe_numeric(df[[paste0(prefix, "allage_not_household_female")]]),
-                               "Other gender" = safe_numeric(df[[paste0(prefix, "allage_household_another")]]) + safe_numeric(df[[paste0(prefix, "allage_not_household_another")]])),
-                 "household" = c("Male" = safe_numeric(df[[paste0(prefix, "allage_household_male")]]),
-                                 "Female" = safe_numeric(df[[paste0(prefix, "allage_household_female")]]),
-                                 "Other gender" = safe_numeric(df[[paste0(prefix, "allage_household_another")]])),
-                 "nonhousehold" = c("Male" = safe_numeric(df[[paste0(prefix, "allage_not_household_male")]]),
-                                    "Female" = safe_numeric(df[[paste0(prefix, "allage_not_household_female")]]),
-                                    "Other gender" = safe_numeric(df[[paste0(prefix, "allage_not_household_another")]]))
-          )
-        } else {
-          switch(activity,
-                 "overall" = c("European" = safe_numeric(df[["Euro_allage_household" %_% suffix]]) + safe_numeric(df[["Euro_allage_not_household" %_% suffix]]),
-                               "Māori" = safe_numeric(df[["Maori_allage_household" %_% suffix]]) + safe_numeric(df[["Maori_allage_not_household" %_% suffix]]),
-                               "Pacific Peoples" = safe_numeric(df[["Paci_allage_household" %_% suffix]]) + safe_numeric(df[["Paci_allage_not_household" %_% suffix]]),
-                               "Asian" = safe_numeric(df[["Asia_allage_household" %_% suffix]])) + safe_numeric(df[["Asia_allage_not_household" %_% suffix]]),
-                 "household" = c("European" = safe_numeric(df[["Euro_allage_household" %_% suffix]]),
-                                 "Māori" = safe_numeric(df[["Maori_allage_household" %_% suffix]]),
-                                 "Pacific Peoples" = safe_numeric(df[["Paci_allage_household" %_% suffix]]),
-                                 "Asian" = safe_numeric(df[["Asia_allage_household" %_% suffix]])),
-                 "nonhousehold" = c("European" = safe_numeric(df[["Euro_allage_not_household" %_% suffix]]),
-                                    "Māori" = safe_numeric(df[["Maori_allage_not_household" %_% suffix]]),
-                                    "Pacific Peoples" = safe_numeric(df[["Paci_allage_not_household" %_% suffix]]),
-                                    "Asian" = safe_numeric(df[["Asia_allage_not_household" %_% suffix]]))
-          )
-        }
-      }
-      
-      # Retrieve all-age carers values for each region
-      all1 <- get_all_values(df1)
-      all2 <- if (has_second) get_all_values(df2) else NULL
-      
-      # Compose custom text with count + percentage
-      Text <- c(
-        paste0("Young carers in this group: ", as.numeric(values1), "<br>",
-               "Total aged 15 to 29 in this group: ", all1, "<br>(", 
-               ifelse(all1 > 0, round(as.numeric(values1) / all1 * 100, 1), NA), "% of young people in this group are carers for selected household)"),
-        if (has_second)
-          paste0("Young carers in this group: ", as.numeric(values2), "<br>",
-                 "Total aged 15 to 29 in this group: ", all2, "<br>(", 
-                 ifelse(all2 > 0, round(as.numeric(values2) / all2 * 100, 1), NA), "% of young people in this group are carers for selected household)")
-      )
-      
-
-      # Assemble plot data with region, category, value and text
-      # Defensive check before plotting
-      if (length(values1) == 0 || length(labels) == 0 ||
-          (has_second && (is.null(values2) || length(values2) != length(labels)))) {
-        return(NULL)
-      }
-      # Then safely assemble plot_data
-      plot_data <- data.frame(
-        Category = rep(labels, if (has_second) 2 else 1),
-        Value = c(as.numeric(values1), if (has_second) as.numeric(values2) else NULL),
-        Region = rep(c(clicked_region(), if (has_second) input$second_region), each = length(labels)),
-        Text = Text
-      )
-      
-      
-      # Generate grouped bar chart with custom labels
-      plot_ly(
-        data = plot_data,
-        x = ~Category, y = ~Value,
-        type = "bar",
-        color = ~Region,
-        colors = setNames(
-          c("#FD8D3C", "#FDBE85"),
-          c(clicked_region(), input$second_region)
-        ),
-        text = ~Value, textposition = 'outside',
-        textfont = list(color = "black", size = 12),
-        hovertext = ~Text,
-        hoverinfo = 'text',
-        barmode = "group"
-      ) %>%
-        layout(
-          title = list(text = "Comparison of Unpaid Activities", pad = list(t = 40)),
-          margin = list(t = 80),
-          xaxis = list(title = ""),
-          yaxis = list(title = "Count")
-        )
-      
-      
-    }
   })
 }
 
+# 运行应用
 shinyApp(ui, server)
