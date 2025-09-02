@@ -1,6 +1,6 @@
-# ADHD 新西兰研究数据仪表板 - 依赖包安装脚本
+# ADHD New Zealand Research Data Dashboard - Package Installation Script
 
-# 检查并安装所需的 R 包
+# Check and install required R packages
 required_packages <- c(
   "shiny",
   "shinydashboard", 
@@ -14,25 +14,25 @@ required_packages <- c(
   "tidyr"
 )
 
-# 安装缺失的包
+# Install missing packages
 missing_packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
 
 if (length(missing_packages) > 0) {
-  cat("正在安装缺失的包...\n")
+  cat("Installing missing packages...\n")
   install.packages(missing_packages, dependencies = TRUE)
-  cat("包安装完成！\n")
+  cat("Package installation completed!\n")
 } else {
-  cat("所有必需的包都已安装。\n")
+  cat("All required packages are already installed.\n")
 }
 
-# 验证安装
-cat("\n验证包安装状态:\n")
+# Verify installation
+cat("\nVerifying package installation status:\n")
 for (pkg in required_packages) {
   if (require(pkg, character.only = TRUE)) {
-    cat(paste("✓", pkg, "已安装\n"))
+    cat(paste("✓", pkg, "installed\n"))
   } else {
-    cat(paste("✗", pkg, "安装失败\n"))
+    cat(paste("✗", pkg, "installation failed\n"))
   }
 }
 
-cat("\n安装完成！现在可以运行 shiny::runApp() 启动应用。\n")
+cat("\nInstallation completed! You can now run shiny::runApp() to start the application.\n")

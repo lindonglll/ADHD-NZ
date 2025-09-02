@@ -1,130 +1,176 @@
-# ADHD 新西兰研究数据仪表板
+# ADHD New Zealand Research Data Dashboard
 
-这是一个基于 Shiny 构建的交互式数据仪表板，用于分析和可视化 ADHD 新西兰在线研究调查数据。
+This is an interactive data dashboard built with Shiny for analyzing and visualizing ADHD New Zealand Online Research Survey data.
 
-## 功能特点
+## Features
 
-### 📊 数据概览
-- **首页统计**: 显示总受访者数、平均年龄、问卷完成率等关键指标
-- **数据表格**: 交互式数据表格，支持筛选和搜索
-- **数据质量分析**: 缺失值分析、数据类型分布等
+### 📊 Data Overview
+- **Home Statistics**: Display key indicators such as total respondents, average age, survey completion rate
+- **Data Table**: Interactive data table with filtering and search capabilities
+- **Data Quality Analysis**: Missing value analysis, data type distribution, etc.
 
-### 📈 统计分析
-- **描述性统计**: 直方图、箱线图、密度图等多种可视化方式
-- **相关性分析**: 皮尔逊相关系数计算和散点图
-- **分组比较**: t检验、方差分析、非参数检验等统计方法
+### 📈 Statistical Analysis
+- **Descriptive Statistics**: Multiple visualization methods including histograms, box plots, density plots
+- **Correlation Analysis**: Pearson correlation coefficient calculation and scatter plots
+- **Group Comparison**: Statistical methods including t-tests, ANOVA, non-parametric tests
 
-### 🗺️ 地理分布
-- **交互式地图**: 基于 Leaflet 的新西兰地图
-- **地理标记**: 显示数据收集点和分布情况
+### 🗺️ Geographic Distribution
+- **Interactive Map**: New Zealand map based on Leaflet
+- **Geographic Markers**: Display data collection points and distribution
 
-## 安装和运行
+## Installation and Running
 
-### 系统要求
-- R (版本 3.6.0 或更高)
-- RStudio (推荐)
+### System Requirements
+- R (version 3.6.0 or higher)
+- RStudio (recommended)
 
-### 依赖包安装
+### Package Installation
 ```r
-# 安装必要的 R 包
+# Install necessary R packages
 install.packages(c("shiny", "shinydashboard", "readxl", "dplyr", "plotly", 
                    "DT", "leaflet", "sf", "ggplot2", "tidyr"))
 ```
 
-### 运行应用
-1. 确保 `ADHD National Online Research Survey (Responses) - Rangiwai (R).xlsx` 文件在同一目录下
-2. 在 R 中运行：
+### Running the Application
+
+#### Method 1: Local Access
+1. Ensure the `ADHD National Online Research Survey (Responses) - Rangiwai (R).xlsx` file is in the same directory
+2. Run in R:
+```r
+source("run_app.R")
+```
+
+#### Method 2: Network Access (Recommended)
+```r
+source("run_network.R")
+```
+This will display local and LAN access addresses.
+
+#### Method 3: Custom Deployment
+```r
+source("deploy_app.R")
+```
+Provides multiple deployment options.
+
+#### Method 4: Direct Run (Recommended, consistent with app_previous.R)
+```r
+source("run_simple.R")
+```
+Or:
 ```r
 shiny::runApp()
 ```
 
-## 数据格式要求
+## Data Format Requirements
 
-应用期望的 Excel 文件应包含以下类型的列：
+The application expects an Excel file containing the following types of columns:
 
-### 人口统计学信息
-- 年龄 (Age)
-- 性别 (Gender)
-- 地区 (Region)
-- 教育水平 (Education)
+### Demographic Information
+- Age
+- Gender
+- Region
+- Education Level
 
-### ADHD 相关指标
-- 症状评分 (Symptom Scores)
-- 诊断信息 (Diagnosis Information)
-- 治疗历史 (Treatment History)
+### ADHD-related Indicators
+- Symptom Scores
+- Diagnosis Information
+- Treatment History
 
-### 生活质量指标
-- 生活质量评分 (Quality of Life Scores)
-- 功能评估 (Functional Assessment)
-- 社会支持 (Social Support)
+### Quality of Life Indicators
+- Quality of Life Scores
+- Functional Assessment
+- Social Support
 
-## 使用说明
+## Usage Instructions
 
-### 1. 首页
-- 查看数据概览和关键统计信息
-- 了解研究背景和目标
+### 1. Home Page
+- View data overview and key statistical information
+- Understand research background and objectives
 
-### 2. 数据概览
-- **数据表格**: 浏览和筛选原始数据
-- **数据质量**: 检查数据完整性和质量
+### 2. Data Overview
+- **Data Table**: Browse and filter raw data
+- **Data Quality**: Check data completeness and quality
 
-### 3. 统计分析
-- **描述性统计**: 选择变量和图表类型进行分析
-- **相关性分析**: 探索变量间的关系
-- **分组比较**: 进行统计检验和比较分析
+### 3. Statistical Analysis
+- **Descriptive Statistics**: Select variables and chart types for analysis
+- **Correlation Analysis**: Explore relationships between variables
+- **Group Comparison**: Perform statistical tests and comparative analysis
 
-### 4. 地理分布
-- 查看数据的地理分布情况
-- 点击地图标记获取详细信息
+### 4. Geographic Distribution
+- View geographic distribution of data
+- Click on map markers to get detailed information
 
-## 自定义和扩展
+## Customization and Extension
 
-### 添加新的分析功能
-1. 在 `server` 函数中添加新的 `renderPlotly` 或 `renderDataTable`
-2. 在 `ui` 中添加相应的输入控件
-3. 更新侧边栏菜单
+### Adding New Analysis Features
+1. Add new `renderPlotly` or `renderDataTable` in the `server` function
+2. Add corresponding input controls in the `ui`
+3. Update the sidebar menu
 
-### 修改数据源
-1. 更新 `read_excel()` 函数中的文件名
-2. 根据实际数据结构调整列名映射
-3. 修改数据清理函数
+### Modifying Data Source
+1. Update the filename in the `read_excel()` function
+2. Adjust column name mapping based on actual data structure
+3. Modify the data cleaning function
 
-### 添加新的可视化
+### Adding New Visualizations
 ```r
-# 示例：添加新的图表
+# Example: Adding a new chart
 output$new_plot <- renderPlotly({
-  # 你的绘图代码
+  # Your plotting code
   plot_ly(data, x = ~x_var, y = ~y_var, type = 'scatter')
 })
 ```
 
-## 故障排除
+## Network Access Instructions
 
-### 常见问题
+### Default Access Address
+When using `shiny::runApp()`, Shiny will automatically:
+- Select an available port (usually 3838, 3839, 3840, etc.)
+- Display the access address in the console
+- Automatically open the application in the browser
 
-1. **数据读取错误**
-   - 检查 Excel 文件路径和名称
-   - 确保文件格式正确
+### Access Address Examples
+- **Local Access**: `http://127.0.0.1:3838` or `http://localhost:3838`
+- **LAN Access**: Requires manual specification of `host = "0.0.0.0"`
 
-2. **包依赖问题**
-   - 运行 `install.packages()` 安装缺失的包
-   - 检查 R 版本兼容性
+### Firewall Settings
+If unable to access from other devices, please check:
+1. Whether Windows firewall allows port 3838
+2. Whether router settings block this port
+3. Ensure devices are on the same network
 
-3. **内存不足**
-   - 减少数据量或优化数据处理
-   - 增加 R 内存限制
+## Troubleshooting
 
-### 调试模式
+### Common Issues
+
+1. **Data Reading Errors**
+   - Check Excel file path and name
+   - Ensure correct file format
+
+2. **Package Dependency Issues**
+   - Run `install.packages()` to install missing packages
+   - Check R version compatibility
+
+3. **Insufficient Memory**
+   - Reduce data volume or optimize data processing
+   - Increase R memory limits
+
+4. **Network Access Issues**
+   - Check firewall settings
+   - Confirm port 3838 is not occupied
+   - Try using different port numbers
+
+### Debug Mode
 ```r
-# 启用调试模式
+# Enable debug mode
 options(shiny.trace = TRUE)
 shiny::runApp()
 ```
 
-## 联系信息
+## Contact Information
 
-如有问题或建议，请联系研究团队。
+For questions or suggestions, please contact the research team.
 
-## 许可证
+## License
 
-本项目仅供研究使用。
+This project is for research use only.

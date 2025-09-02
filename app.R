@@ -9,115 +9,115 @@ library(DT)
 library(ggplot2)
 library(tidyr)
 
-# 读取 ADHD 数据集
+# Read ADHD dataset
 adhd_data <- read_excel("ADHD National Online Research Survey (Responses) - Rangiwai (R).xlsx")
 
-# 数据清理和预处理
-# 假设数据包含以下列（根据实际数据调整）
-# 1. 人口统计学信息（年龄、性别、地区等）
-# 2. ADHD 相关症状评分
-# 3. 生活质量指标
-# 4. 治疗相关信息
+# Data cleaning and preprocessing
+# Assuming data contains the following columns (adjust based on actual data)
+# 1. Demographic information (age, gender, region, etc.)
+# 2. ADHD-related symptom scores
+# 3. Quality of life indicators
+# 4. Treatment-related information
 
-# 数据清理函数
+# Data cleaning function
 clean_adhd_data <- function(data) {
-  # 移除完全为空的行
+  # Remove completely empty rows
   data <- data[!apply(data, 1, function(x) all(is.na(x))), ]
   
-  # 处理缺失值
+  # Handle missing values
   data <- data %>%
     mutate(across(everything(), ~ifelse(. == "", NA, .)))
   
   return(data)
 }
 
-# 清理数据
+# Clean data
 adhd_clean <- clean_adhd_data(adhd_data)
 
-# 获取数值型列（用于统计分析）
+# Get numeric columns (for statistical analysis)
 numeric_cols <- names(adhd_clean)[sapply(adhd_clean, is.numeric)]
 categorical_cols <- names(adhd_clean)[sapply(adhd_clean, function(x) is.character(x) || is.factor(x))]
 
-# 安全数值转换函数
+# Safe numeric conversion function
 safe_numeric <- function(x) {
   if (is.null(x) || length(x) == 0 || is.na(x)) return(0)
   as.numeric(x)
 }
 
-# UI 定义
+# UI definition
 ui <- dashboardPage(
-  dashboardHeader(title = "ADHD 新西兰研究数据仪表板"),
+  dashboardHeader(title = "ADHD New Zealand Research Data Dashboard"),
   dashboardSidebar(
     tags$head(tags$style(HTML(
       ".main-sidebar { background-color: #ffffff !important; }"
     ))),
     sidebarMenu(
-      menuItem("首页", tabName = "tab-home", icon = icon("home")),
-      menuItem("数据概览", tabName = "tab-overview", icon = icon("table")),
-      menuItem("统计分析", tabName = "tab-analysis", icon = icon("chart-bar")),
-      menuItem("地理分布", tabName = "tab-map", icon = icon("globe"))
+      menuItem("Home", tabName = "tab-home", icon = icon("home")),
+      menuItem("Data Overview", tabName = "tab-overview", icon = icon("table")),
+      menuItem("Statistical Analysis", tabName = "tab-analysis", icon = icon("chart-bar")),
+      menuItem("Geographic Distribution", tabName = "tab-map", icon = icon("globe"))
     ),
     br(),
     div(style = "position: absolute; bottom: 200px; left: 10px; right: 10px; font-size: 16px; border: 1px solid #ccc; padding: 10px; background-color: #ffffff; border-radius: 5px;",
-        HTML("<span style='color: black;'>ADHD 新西兰在线研究调查<br><br>
-              最后更新:<br>2025年<br><br>
-              联系邮箱:<br><span style='font-size: 13px; color: black;'>研究团队</span></span>")
+        HTML("<span style='color: black;'>ADHD New Zealand Online Research Survey<br><br>
+              Last Updated:<br>2025<br><br>
+              Contact Email:<br><span style='font-size: 13px; color: black;'>Research Team</span></span>")
     )
   ),
   dashboardBody(
     tabItems(
-      # 首页
+      # Home page
       tabItem(tabName = "tab-home",
               fluidPage(
                 div(style = "border: 2px solid #ccc; border-radius: 10px; padding: 30px; background-color: #fefefe; box-shadow: 2px 2px 10px rgba(0,0,0,0.1);",
                     
-                    h2("ADHD 新西兰在线研究调查数据仪表板"),
+                    h2("ADHD New Zealand Online Research Survey Data Dashboard"),
                     
-                    h4("📘 数据来源"),
-                    p("本仪表板基于 ADHD 新西兰在线研究调查数据构建。",
-                      "该调查旨在了解新西兰 ADHD 患者的现状、需求和挑战。"),
+                    h4("📘 Data Source"),
+                    p("This dashboard is built based on ADHD New Zealand Online Research Survey data.",
+                      "The survey aims to understand the current situation, needs, and challenges of ADHD patients in New Zealand."),
                     
                     br(),
                     
-                    h4("👥 目标人群"),
-                    p("调查对象包括："),
+                    h4("👥 Target Population"),
+                    p("Survey participants include:"),
                     tags$ul(
-                      tags$li("ADHD 患者"),
-                      tags$li("ADHD 患者的家庭成员"),
-                      tags$li("医疗保健提供者"),
-                      tags$li("教育工作者")
+                      tags$li("ADHD patients"),
+                      tags$li("Family members of ADHD patients"),
+                      tags$li("Healthcare providers"),
+                      tags$li("Educators")
                     ),
                     
                     br(),
                     
-                    h4("🎯 研究目标"),
+                    h4("🎯 Research Objectives"),
                     tags$ul(
-                      tags$li(em("了解新西兰 ADHD 患者的分布和特征")),
-                      tags$li(em("评估 ADHD 对患者生活质量的影响")),
-                      tags$li(em("分析治疗和服务的可及性")),
-                      tags$li(em("识别改善 ADHD 护理的机遇"))
+                      tags$li(em("Understand the distribution and characteristics of ADHD patients in New Zealand")),
+                      tags$li(em("Assess the impact of ADHD on patients' quality of life")),
+                      tags$li(em("Analyze accessibility of treatment and services")),
+                      tags$li(em("Identify opportunities to improve ADHD care"))
                     ),
                     
                     br(),
                     
-                    h4("📊 数据概览"),
+                    h4("📊 Data Overview"),
                     fluidRow(
                       column(4,
                              div(style = "text-align: center; padding: 20px; background-color: #e8f4fd; border-radius: 10px;",
                                  h3(textOutput("total_respondents")),
-                                 p("总受访者数")
+                                 p("Total Respondents")
                              )
                       ),
                       column(4,
                              div(style = "text-align: center; padding: 20px; background-color: #f0f8e8; border-radius: 10px;",
                                  h3(textOutput("avg_age")),
-                                 p("平均年龄")
+                                 p("Average Age")
                              )
                       ),
                       column(4,
                              div(style = "text-align: center; padding: 20px; background-color: #fff8e8; border-radius: 10px;",
                                  h3(textOutput("completion_rate")),
-                                 p("问卷完成率")
+                                 p("Survey Completion Rate")
                              )
                       )
                     )
@@ -125,25 +125,25 @@ ui <- dashboardPage(
               )
       ),
       
-      # 数据概览页
+      # Data overview page
       tabItem(tabName = "tab-overview",
               fluidPage(
                 tabsetPanel(id = "overview_mode", type = "tabs",
                             
-                            tabPanel("数据表格",
+                            tabPanel("Data Table",
                                      div(style = "text-align: center;",
-                                         h2("ADHD 研究数据概览")
+                                         h2("ADHD Research Data Overview")
                                      ),
                                      fluidRow(
                                        column(4,
-                                              selectInput("filter_column", "选择筛选列:", 
-                                                         choices = c("全部", categorical_cols))
+                                              selectInput("filter_column", "Select Filter Column:", 
+                                                         choices = c("All", categorical_cols))
                                        ),
                                        column(4,
                                               uiOutput("filter_value_selector")
                                        ),
                                        column(4,
-                                              downloadButton("download_data", "下载数据")
+                                              downloadButton("download_data", "Download Data")
                                        )
                                      ),
                                      fluidRow(
@@ -153,20 +153,20 @@ ui <- dashboardPage(
                                      )
                             ),
                             
-                            tabPanel("数据质量",
+                            tabPanel("Data Quality",
                                      fluidRow(
                                        column(6,
-                                              h3("缺失值分析"),
+                                              h3("Missing Value Analysis"),
                                               plotlyOutput("missing_plot")
                                        ),
                                        column(6,
-                                              h3("数据类型分布"),
+                                              h3("Data Type Distribution"),
                                               plotlyOutput("data_type_plot")
                                        )
                                      ),
                                      fluidRow(
                                        column(12,
-                                              h3("数据质量报告"),
+                                              h3("Data Quality Report"),
                                               verbatimTextOutput("quality_report")
                                        )
                                      )
@@ -175,22 +175,22 @@ ui <- dashboardPage(
               )
       ),
       
-      # 统计分析页
+      # Statistical analysis page
       tabItem(tabName = "tab-analysis",
               fluidPage(
                 tabsetPanel(id = "analysis_mode", type = "tabs",
                             
-                            tabPanel("描述性统计",
+                            tabPanel("Descriptive Statistics",
                                      sidebarLayout(
                                        sidebarPanel(width = 3,
-                                                    selectInput("analysis_variable", "选择分析变量:", 
+                                                    selectInput("analysis_variable", "Select Analysis Variable:", 
                                                                choices = numeric_cols),
-                                                    selectInput("group_by_var", "分组变量 (可选):", 
-                                                               choices = c("无", categorical_cols)),
-                                                    radioButtons("plot_type", "图表类型:",
-                                                                 choices = c("直方图" = "histogram", 
-                                                                            "箱线图" = "boxplot",
-                                                                            "密度图" = "density"))
+                                                    selectInput("group_by_var", "Group Variable (Optional):", 
+                                                               choices = c("None", categorical_cols)),
+                                                    radioButtons("plot_type", "Chart Type:",
+                                                                 choices = c("Histogram" = "histogram", 
+                                                                            "Box Plot" = "boxplot",
+                                                                            "Density Plot" = "density"))
                                        ),
                                        mainPanel(
                                          div(style = "height: calc(100vh - 100px);",
@@ -200,29 +200,29 @@ ui <- dashboardPage(
                                      )
                             ),
                             
-                            tabPanel("相关性分析",
+                            tabPanel("Correlation Analysis",
                                      fluidRow(
                                        column(4,
-                                              selectInput("corr_var1", "变量 1:", choices = numeric_cols),
-                                              selectInput("corr_var2", "变量 2:", choices = numeric_cols)
+                                              selectInput("corr_var1", "Variable 1:", choices = numeric_cols),
+                                              selectInput("corr_var2", "Variable 2:", choices = numeric_cols)
                                        ),
                                        column(8,
-                                              h3("相关性分析结果"),
+                                              h3("Correlation Analysis Results"),
                                               verbatimTextOutput("correlation_result"),
                                               plotlyOutput("correlation_plot")
                                        )
                                      )
                             ),
                             
-                            tabPanel("分组比较",
+                            tabPanel("Group Comparison",
                                      sidebarLayout(
                                        sidebarPanel(width = 3,
-                                                    selectInput("compare_var", "比较变量:", choices = numeric_cols),
-                                                    selectInput("group_var", "分组变量:", choices = categorical_cols),
-                                                    radioButtons("test_type", "统计检验:",
-                                                                 choices = c("t检验" = "t_test", 
-                                                                            "方差分析" = "anova",
-                                                                            "非参数检验" = "wilcox"))
+                                                    selectInput("compare_var", "Comparison Variable:", choices = numeric_cols),
+                                                    selectInput("group_var", "Group Variable:", choices = categorical_cols),
+                                                    radioButtons("test_type", "Statistical Test:",
+                                                                 choices = c("T-Test" = "t_test", 
+                                                                            "ANOVA" = "anova",
+                                                                            "Non-parametric Test" = "wilcox"))
                                        ),
                                        mainPanel(
                                          div(style = "height: calc(100vh - 100px);",
@@ -235,7 +235,7 @@ ui <- dashboardPage(
               )
       ),
       
-      # 地理分布页
+      # Geographic distribution page
       tabItem(tabName = "tab-map",
               fluidPage(
                 tags$head(tags$style(HTML("
@@ -264,17 +264,17 @@ ui <- dashboardPage(
   )
 )
 
-# 服务器逻辑
+# Server logic
 server <- function(input, output, session) {
   
-  # 首页统计信息
+  # Home page statistics
   output$total_respondents <- renderText({
     nrow(adhd_clean)
   })
   
   output$avg_age <- renderText({
-    # 假设有年龄列，根据实际数据调整
-    age_col <- names(adhd_clean)[grepl("age|年龄", names(adhd_clean), ignore.case = TRUE)]
+    # Assuming there's an age column, adjust based on actual data
+    age_col <- names(adhd_clean)[grepl("age", names(adhd_clean), ignore.case = TRUE)]
     if (length(age_col) > 0) {
       avg_age <- mean(as.numeric(adhd_clean[[age_col[1]]]), na.rm = TRUE)
       round(avg_age, 1)
@@ -284,7 +284,7 @@ server <- function(input, output, session) {
   })
   
   output$completion_rate <- renderText({
-    # 计算问卷完成率
+    # Calculate survey completion rate
     total_questions <- ncol(adhd_clean)
     completion_rates <- apply(adhd_clean, 1, function(row) {
       sum(!is.na(row)) / total_questions
@@ -292,17 +292,17 @@ server <- function(input, output, session) {
     paste0(round(mean(completion_rates, na.rm = TRUE) * 100, 1), "%")
   })
   
-  # 数据表格
+  # Data table
   output$filter_value_selector <- renderUI({
-    if (input$filter_column != "全部") {
+    if (input$filter_column != "All") {
       unique_values <- unique(adhd_clean[[input$filter_column]])
-      selectInput("filter_value", "选择值:", choices = c("全部", unique_values))
+      selectInput("filter_value", "Select Value:", choices = c("All", unique_values))
     }
   })
   
   filtered_data <- reactive({
     data <- adhd_clean
-    if (input$filter_column != "全部" && !is.null(input$filter_value) && input$filter_value != "全部") {
+    if (input$filter_column != "All" && !is.null(input$filter_value) && input$filter_value != "All") {
       data <- data[data[[input$filter_column]] == input$filter_value, ]
     }
     data
@@ -314,7 +314,7 @@ server <- function(input, output, session) {
               filter = "top")
   })
   
-  # 下载数据
+  # Download data
   output$download_data <- downloadHandler(
     filename = function() {
       paste("adhd_data_", Sys.Date(), ".csv", sep = "")
@@ -324,40 +324,40 @@ server <- function(input, output, session) {
     }
   )
   
-  # 缺失值分析
+  # Missing value analysis
   output$missing_plot <- renderPlotly({
     missing_counts <- colSums(is.na(adhd_clean))
     missing_percent <- (missing_counts / nrow(adhd_clean)) * 100
     
     plot_ly(x = names(missing_percent), y = missing_percent, type = 'bar',
             marker = list(color = '#ff7f0e')) %>%
-      layout(title = "各列缺失值百分比",
-             xaxis = list(title = "变量名", tickangle = 45),
-             yaxis = list(title = "缺失值百分比 (%)"))
+      layout(title = "Missing Value Percentage by Column",
+             xaxis = list(title = "Variable Name", tickangle = 45),
+             yaxis = list(title = "Missing Value Percentage (%)"))
   })
   
-  # 数据类型分布
+  # Data type distribution
   output$data_type_plot <- renderPlotly({
     data_types <- sapply(adhd_clean, class)
     type_counts <- table(data_types)
     
     plot_ly(labels = names(type_counts), values = type_counts, type = 'pie') %>%
-      layout(title = "数据类型分布")
+      layout(title = "Data Type Distribution")
   })
   
-  # 数据质量报告
+  # Data quality report
   output$quality_report <- renderPrint({
-    cat("数据质量报告\n")
-    cat("============\n\n")
-    cat("总行数:", nrow(adhd_clean), "\n")
-    cat("总列数:", ncol(adhd_clean), "\n")
-    cat("数值型变量数:", length(numeric_cols), "\n")
-    cat("分类型变量数:", length(categorical_cols), "\n")
-    cat("总缺失值数:", sum(is.na(adhd_clean)), "\n")
-    cat("缺失值比例:", round(sum(is.na(adhd_clean)) / (nrow(adhd_clean) * ncol(adhd_clean)) * 100, 2), "%\n")
+    cat("Data Quality Report\n")
+    cat("==================\n\n")
+    cat("Total Rows:", nrow(adhd_clean), "\n")
+    cat("Total Columns:", ncol(adhd_clean), "\n")
+    cat("Numeric Variables:", length(numeric_cols), "\n")
+    cat("Categorical Variables:", length(categorical_cols), "\n")
+    cat("Total Missing Values:", sum(is.na(adhd_clean)), "\n")
+    cat("Missing Value Percentage:", round(sum(is.na(adhd_clean)) / (nrow(adhd_clean) * ncol(adhd_clean)) * 100, 2), "%\n")
   })
   
-  # 描述性统计分析
+  # Descriptive statistical analysis
   output$analysis_plot <- renderPlotly({
     req(input$analysis_variable)
     
@@ -367,41 +367,41 @@ server <- function(input, output, session) {
     
     if (input$plot_type == "histogram") {
       plot_ly(x = var_data, type = 'histogram', nbinsx = 30) %>%
-        layout(title = paste("分布图:", input$analysis_variable),
+        layout(title = paste("Distribution Plot:", input$analysis_variable),
                xaxis = list(title = input$analysis_variable),
-               yaxis = list(title = "频数"))
+               yaxis = list(title = "Frequency"))
     } else if (input$plot_type == "boxplot") {
       plot_ly(y = var_data, type = 'box') %>%
-        layout(title = paste("箱线图:", input$analysis_variable),
+        layout(title = paste("Box Plot:", input$analysis_variable),
                yaxis = list(title = input$analysis_variable))
     } else if (input$plot_type == "density") {
       density_data <- density(var_data)
       plot_ly(x = density_data$x, y = density_data$y, type = 'scatter', mode = 'lines') %>%
-        layout(title = paste("密度图:", input$analysis_variable),
+        layout(title = paste("Density Plot:", input$analysis_variable),
                xaxis = list(title = input$analysis_variable),
-               yaxis = list(title = "密度"))
+               yaxis = list(title = "Density"))
     }
   })
   
-  # 相关性分析
+  # Correlation analysis
   output$correlation_result <- renderPrint({
     req(input$corr_var1, input$corr_var2)
     
     var1 <- as.numeric(adhd_clean[[input$corr_var1]])
     var2 <- as.numeric(adhd_clean[[input$corr_var2]])
     
-    # 移除缺失值
+    # Remove missing values
     complete_cases <- complete.cases(var1, var2)
     var1 <- var1[complete_cases]
     var2 <- var2[complete_cases]
     
     if (length(var1) > 0) {
       cor_result <- cor.test(var1, var2)
-      cat("皮尔逊相关系数:", round(cor_result$estimate, 3), "\n")
-      cat("p值:", round(cor_result$p.value, 4), "\n")
-      cat("95%置信区间:", round(cor_result$conf.int, 3), "\n")
+      cat("Pearson Correlation Coefficient:", round(cor_result$estimate, 3), "\n")
+      cat("P-value:", round(cor_result$p.value, 4), "\n")
+      cat("95% Confidence Interval:", round(cor_result$conf.int, 3), "\n")
     } else {
-      cat("数据不足，无法计算相关性")
+      cat("Insufficient data to calculate correlation")
     }
   })
   
@@ -417,13 +417,13 @@ server <- function(input, output, session) {
     
     if (length(var1) > 0) {
       plot_ly(x = var1, y = var2, type = 'scatter', mode = 'markers') %>%
-        layout(title = paste("相关性散点图:", input$corr_var1, "vs", input$corr_var2),
+        layout(title = paste("Correlation Scatter Plot:", input$corr_var1, "vs", input$corr_var2),
                xaxis = list(title = input$corr_var1),
                yaxis = list(title = input$corr_var2))
     }
   })
   
-  # 分组比较
+  # Group comparison
   output$comparison_plot <- renderPlotly({
     req(input$compare_var, input$group_var)
     
@@ -434,36 +434,36 @@ server <- function(input, output, session) {
     if (input$plot_type == "boxplot") {
       plot_ly(compare_data, x = ~get(input$group_var), y = ~get(input$compare_var), 
               type = 'box', color = ~get(input$group_var)) %>%
-        layout(title = paste("分组比较:", input$compare_var, "by", input$group_var),
+        layout(title = paste("Group Comparison:", input$compare_var, "by", input$group_var),
                xaxis = list(title = input$group_var),
                yaxis = list(title = input$compare_var))
     } else {
-      # 默认显示箱线图
+      # Default display box plot
       plot_ly(compare_data, x = ~get(input$group_var), y = ~get(input$compare_var), 
               type = 'box', color = ~get(input$group_var)) %>%
-        layout(title = paste("分组比较:", input$compare_var, "by", input$group_var),
+        layout(title = paste("Group Comparison:", input$compare_var, "by", input$group_var),
                xaxis = list(title = input$group_var),
                yaxis = list(title = input$compare_var))
     }
   })
   
-  # 地图相关（简化版）
+  # Map related (simplified version)
   output$nz_map <- renderLeaflet({
     leaflet() %>%
       setView(lng = 174.7645, lat = -40.9006, zoom = 5) %>%
       addProviderTiles("CartoDB.Positron") %>%
       addMarkers(lng = 174.7645, lat = -40.9006, 
-                 popup = "新西兰 ADHD 研究数据收集点")
+                 popup = "New Zealand ADHD Research Data Collection Point")
   })
   
   output$map_info_box <- renderUI({
     absolutePanel(class = "floating-box", draggable = TRUE,
-                  h4("地理分布信息"),
-                  p("ADHD 研究数据的地理分布分析将在此显示。"),
-                  p("点击地图上的标记查看详细信息。")
+                  h4("Geographic Distribution Information"),
+                  p("Geographic distribution analysis of ADHD research data will be displayed here."),
+                  p("Click on map markers to view detailed information.")
     )
   })
 }
 
-# 运行应用
+# Run application (using default configuration, consistent with app_previous.R)
 shinyApp(ui, server)
