@@ -1,22 +1,26 @@
-# ADHD New Zealand Research Data Dashboard
+# ADHD New Zealand Research Survey Dashboard
 
-This is an interactive data dashboard built with Shiny for analyzing and visualizing ADHD New Zealand Online Research Survey data.
+This is an interactive Shiny application for analyzing and visualizing ADHD New Zealand Online Research Survey data. The application provides a streamlined interface for exploring survey responses with faceted visualizations and supports both Likert scales and many-to-many relationships.
 
 ## Features
 
-### 📊 Data Overview
-- **Home Statistics**: Display key indicators such as total respondents, average age, survey completion rate
-- **Data Table**: Interactive data table with filtering and search capabilities
-- **Data Quality Analysis**: Missing value analysis, data type distribution, etc.
+### 📊 Interactive Data Visualization
+- **Single Figure with Facets**: Clean, focused visualization with demographic faceting
+- **Multiple Variable Groups**: Support for treatment, challenges, support systems, and diagnosis data
+- **Flexible Display Modes**: Toggle between percentage and count displays
+- **Dynamic Faceting**: Analyze data by age group, gender, ethnicity, or region
 
-### 📈 Statistical Analysis
-- **Descriptive Statistics**: Multiple visualization methods including histograms, box plots, density plots
-- **Correlation Analysis**: Pearson correlation coefficient calculation and scatter plots
-- **Group Comparison**: Statistical methods including t-tests, ANOVA, non-parametric tests
+### 📈 Data Analysis Capabilities
+- **Binary Group Analysis**: Handle 0/1 indicator variables for ADHD-related factors
+- **Likert Scale Support**: Process both numeric (1-5) and text-based five-level scales
+- **Single Column Analysis**: Support for categorical, text, and numeric variables
+- **Cross-tabulation**: Calculate proportions and counts by demographic facets
 
-### 🗺️ Geographic Distribution
-- **Interactive Map**: New Zealand map based on Leaflet
-- **Geographic Markers**: Display data collection points and distribution
+### 🎯 Specialized ADHD Research Features
+- **Treatment Analysis**: Medication and therapy usage patterns
+- **Challenge Assessment**: Time management, focus, impulsivity, organization, memory
+- **Support System Evaluation**: Family, friends, healthcare providers, community groups
+- **Diagnosis Tracking**: Formal diagnosis, wait times, diagnostic systems
 
 ## Installation and Running
 
@@ -27,144 +31,178 @@ This is an interactive data dashboard built with Shiny for analyzing and visuali
 ### Package Installation
 ```r
 # Install necessary R packages
-install.packages(c("shiny", "shinydashboard", "readxl", "dplyr", "plotly", 
-                   "DT", "leaflet", "sf", "ggplot2", "tidyr"))
+install.packages(c("shiny", "shinydashboard", "readxl", "dplyr", "ggplot2", 
+                   "tidyr", "scales", "forcats", "stringr", "tidyselect", "rlang"))
 ```
 
 ### Running the Application
 
-#### Method 1: Local Access
+#### Method 1: Direct Run (Recommended)
 1. Ensure the `ADHD National Online Research Survey (Responses) - Rangiwai (R).xlsx` file is in the same directory
 2. Run in R:
 ```r
-source("run_app.R")
+source("app.R")
 ```
 
-#### Method 2: Network Access (Recommended)
+#### Method 2: Using Shiny RunApp
 ```r
-source("run_network.R")
+shiny::runApp("app.R")
 ```
-This will display local and LAN access addresses.
 
-#### Method 3: Custom Deployment
+#### Method 3: Network Access
+To enable network access from other devices:
 ```r
-source("deploy_app.R")
+shiny::runApp("app.R", host = "0.0.0.0", port = 3838)
 ```
-Provides multiple deployment options.
-
-#### Method 4: Direct Run (Recommended, consistent with app_previous.R)
-```r
-source("run_simple.R")
-```
-Or:
-```r
-shiny::runApp()
-```
+This will display both local and LAN access addresses.
 
 ## Data Format Requirements
 
-The application expects an Excel file containing the following types of columns:
+The application expects an Excel file with a "Main" sheet containing the following types of columns:
 
 ### Demographic Information
-- Age
-- Gender
-- Region
-- Education Level
+- **Age**: Standardized age ranges (18-24, 25-34, 35-44, 45-54, 55+)
+- **Gender**: Gender categories
+- **Region**: Geographic regions
+- **Ethnicity**: Māori, European, Asian, MELAA, Pacific Peoples, Other Ethnicity
 
-### ADHD-related Indicators
-- Symptom Scores
-- Diagnosis Information
-- Treatment History
+### ADHD-related Variable Groups (Binary 0/1 indicators)
+- **Treatment**: medicator, Medication, therapy, Therapy
+- **Challenges**: Time_mgmt, Time_mgnt, Time management, Focus, Impulsivity, Organisation, Memory
+- **Support Systems**: Family, Friends, Healthcare providers, Community groups, Online resources
+- **Diagnosis**: Formal_Diagnosis, Wait_List, Diagnosis_System
 
-### Quality of Life Indicators
-- Quality of Life Scores
-- Functional Assessment
-- Social Support
+### Impact Variables (Likert scales)
+- **Education_Effect**: Impact on education (1-5 scale or text)
+- **Occupation_Effect**: Impact on occupation (1-5 scale or text)
+- **Social_Effect**: Impact on social life (1-5 scale or text)
+- **Matauranga**: Māori knowledge/education impact (1-5 scale or text)
+- **Support_effect**: Support system effectiveness (1-5 scale or text)
+
+### Additional Single Columns
+- **Formal_Diagnosis**: Formal diagnosis status
+- **Diagnosis_Age**: Age at diagnosis
+- **Diagnosis_Who**: Who provided the diagnosis
+- **Diagnosis_System**: Diagnostic system used
+- **Wait_List**: Wait list information
+- **Treatment_Effect**: Treatment effectiveness (Likert scale)
 
 ## Usage Instructions
 
-### 1. Home Page
-- View data overview and key statistical information
-- Understand research background and objectives
+### 1. Variable Selection
+- **ADHD-related group**: Choose from treatment, challenges, support systems, diagnosis, or impact variables
+- **Impact column**: When selecting impact variables, choose specific columns like Education_Effect, Occupation_Effect, etc.
+- **Display mode**: Toggle between percentage and count displays
 
-### 2. Data Overview
-- **Data Table**: Browse and filter raw data
-- **Data Quality**: Check data completeness and quality
+### 2. Faceting Options
+- **None**: View overall data without demographic breakdown
+- **Age group**: Analyze by age ranges (18-24, 25-34, 35-44, 45-54, 55+)
+- **Gender**: Compare across gender categories
+- **Ethnicity**: Analyze by ethnic groups (Māori, European, Asian, MELAA, Pacific Peoples, Other)
+- **Region**: Compare across geographic regions
 
-### 3. Statistical Analysis
-- **Descriptive Statistics**: Select variables and chart types for analysis
-- **Correlation Analysis**: Explore relationships between variables
-- **Group Comparison**: Perform statistical tests and comparative analysis
+### 3. Data Visualization
+- **Horizontal bar charts**: Clean, readable visualization with percentage/count labels
+- **Faceted displays**: When faceting is enabled, charts are split by demographic groups
+- **Dynamic titles**: Chart titles automatically update based on selected variables and faceting
 
-### 4. Geographic Distribution
-- View geographic distribution of data
-- Click on map markers to get detailed information
+### 4. Data Processing Features
+- **Automatic data cleaning**: Handles missing values, standardizes text responses
+- **Binary normalization**: Converts various formats (yes/no, 1/0, true/false) to standardized 0/1
+- **Likert scale processing**: Handles both numeric (1-5) and text-based five-level scales
+- **Many-to-many relationships**: Supports complex survey responses where participants can select multiple options
 
 ## Customization and Extension
 
-### Adding New Analysis Features
-1. Add new `renderPlotly` or `renderDataTable` in the `server` function
-2. Add corresponding input controls in the `ui`
-3. Update the sidebar menu
-
-### Modifying Data Source
-1. Update the filename in the `read_excel()` function
-2. Adjust column name mapping based on actual data structure
-3. Modify the data cleaning function
-
-### Adding New Visualizations
+### Adding New Variable Groups
+1. Add new column groups in the "Column Groups" section:
 ```r
-# Example: Adding a new chart
-output$new_plot <- renderPlotly({
-  # Your plotting code
-  plot_ly(data, x = ~x_var, y = ~y_var, type = 'scatter')
-})
+new_group_cols <- intersect(c("Column1", "Column2", "Column3"), all_cols)
 ```
 
-## Network Access Instructions
+2. Add corresponding options in the sidebar input:
+```r
+"New Group" = "__NEW_GROUP__"
+```
 
-### Default Access Address
-When using `shiny::runApp()`, Shiny will automatically:
-- Select an available port (usually 3838, 3839, 3840, etc.)
-- Display the access address in the console
-- Automatically open the application in the browser
+3. Update the server logic to handle the new group:
+```r
+"__NEW_GROUP__" = new_group_cols
+```
 
-### Access Address Examples
-- **Local Access**: `http://127.0.0.1:3838` or `http://localhost:3838`
-- **LAN Access**: Requires manual specification of `host = "0.0.0.0"`
+### Modifying Data Source
+1. Update the Excel file path in the `xlsx_path` variable
+2. Adjust column name mapping in the variable group definitions
+3. Modify the data cleaning functions as needed
 
-### Firewall Settings
-If unable to access from other devices, please check:
-1. Whether Windows firewall allows port 3838
-2. Whether router settings block this port
-3. Ensure devices are on the same network
+### Adding New Faceting Options
+1. Add new demographic variables to the `demo_long()` function
+2. Update the sidebar faceting options
+3. Add corresponding server logic for the new facet
+
+### Customizing Visualizations
+The application uses a unified plotting function `plot_cross_group()`. To modify:
+1. Update the `plot_cross_group()` function for styling changes
+2. Modify the `ggplot2` theme and aesthetics as needed
+3. Adjust text wrapping and label formatting
+
+## Application Architecture
+
+### Code Structure
+The application follows a modular design with clear separation of concerns:
+
+1. **Data Loading and Preprocessing**: Handles Excel file reading and data cleaning
+2. **Variable Grouping**: Organizes survey variables into logical groups
+3. **Utility Functions**: Provides data transformation and analysis functions
+4. **User Interface**: Clean, focused interface with sidebar controls
+5. **Server Logic**: Handles user interactions and generates visualizations
+
+### Key Functions
+- `norm01()`: Binary normalization for 0/1 indicators
+- `coerce_likert_1to5()`: Likert scale standardization
+- `adhd_long()`: Converts binary groups to long format
+- `demo_long()`: Handles demographic faceting
+- `build_cross_prop_*()`: Calculate proportions and counts
+- `plot_cross_group()`: Unified visualization function
+
+### Data Processing Pipeline
+1. **Load**: Read Excel file from "Main" sheet
+2. **Clean**: Standardize column names, handle missing values
+3. **Transform**: Convert variables to appropriate formats
+4. **Group**: Organize variables into analysis groups
+5. **Analyze**: Calculate proportions and counts by facets
+6. **Visualize**: Generate interactive charts
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Data Reading Errors**
-   - Check Excel file path and name
-   - Ensure correct file format
+   - Ensure the Excel file `ADHD National Online Research Survey (Responses) - Rangiwai (R).xlsx` is in the same directory
+   - Check that the file has a "Main" sheet
+   - Verify file is not corrupted or password-protected
 
 2. **Package Dependency Issues**
-   - Run `install.packages()` to install missing packages
-   - Check R version compatibility
+   - Install missing packages: `install.packages(c("shiny", "shinydashboard", "readxl", "dplyr", "ggplot2", "tidyr", "scales", "forcats", "stringr", "tidyselect", "rlang"))`
+   - Check R version compatibility (3.6.0 or higher)
 
-3. **Insufficient Memory**
-   - Reduce data volume or optimize data processing
-   - Increase R memory limits
+3. **Variable Selection Issues**
+   - If no variables appear in dropdowns, check that column names match expected patterns
+   - Verify that data contains the expected variable groups (treatment, challenges, support, etc.)
 
-4. **Network Access Issues**
-   - Check firewall settings
-   - Confirm port 3838 is not occupied
-   - Try using different port numbers
+4. **Visualization Issues**
+   - If charts don't display, check for missing data in selected variables
+   - Ensure faceting variables (age, gender, ethnicity) contain valid values
+
+5. **Performance Issues**
+   - For large datasets, consider filtering data before analysis
+   - Check available system memory
 
 ### Debug Mode
 ```r
-# Enable debug mode
+# Enable debug mode for troubleshooting
 options(shiny.trace = TRUE)
-shiny::runApp()
+shiny::runApp("app.R")
 ```
 
 ## Contact Information
