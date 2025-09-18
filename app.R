@@ -81,11 +81,11 @@ challenges_cols <- intersect(c("Time_mgmt","Time_mgnt","Time management","Focus"
 support_cols    <- intersect(c("Family","Friends","Healthcare providers","Community groups","Online resources"), all_cols)
 diagnosis_cols  <- intersect(c("Formal_Diagnosis","Wait_List","Diagnosis_System"), all_cols)
 
-# Impacts（单列 Likert）
+# Impacts (single column Likert)
 impact_cols     <- intersect(c("Education_Effect","Occupation_Effect","Social_Effect","Matauranga","Support_effect"), all_cols)
 
 # ---------- 3) Helpers ----------
-# 0/1 统一
+# 0/1 normalization
 norm01 <- function(x){
   if (is.numeric(x)) return(x)
   if (is.logical(x)) return(as.numeric(x))
@@ -100,15 +100,15 @@ norm01 <- function(x){
   rep(NA_real_, length(x))
 }
 
-# 将 文字/数字 Likert 统一到有序因子
+# Convert text/numeric Likert to ordered factor
 coerce_likert_1to5 <- function(v){
-  # 优先尝试数字
+  # Try numeric first
   v_num <- suppressWarnings(as.numeric(v))
   if (any(!is.na(v_num))) {
     v_num[!(v_num %in% 1:5)] <- NA
     return(factor(v_num, levels = 1:5, labels = c("1","2","3","4","5"), ordered = TRUE))
   }
-  # 文字五级
+  # Text five-level
   vv <- tolower(trimws(as.character(v)))
   map <- c(
     "not important at all" = "Not important at all",
@@ -118,12 +118,12 @@ coerce_likert_1to5 <- function(v){
     "very important"       = "Very important"
   )
   lbl <- unname(map[vv])
-  # 其他（如空白、全选、未知）置 NA
+  # Others (blank, all selected, unknown) set to NA
   fac <- factor(lbl, levels = unname(map), ordered = TRUE)
   fac
 }
 
-# ADHD 0/1 组 -> (.rid, Option) 只保留 value==1
+# ADHD 0/1 group -> (.rid, Option) keep only value==1
 adhd_long <- function(dat, cols){
   cols <- intersect(cols, names(dat))
   validate(need(length(cols)>=2, "Selected ADHD group has <2 valid columns."))
@@ -135,7 +135,7 @@ adhd_long <- function(dat, cols){
   df
 }
 
-# 人口学 facet -> (.rid, Facet)
+# Demographics facet -> (.rid, Facet)
 demo_long <- function(dat, facet_key){
   if (facet_key == "Age")      return(dat %>% select(.rid, Facet = Age)    %>% filter(!is.na(Facet)))
   if (facet_key == "Gender")   return(dat %>% select(.rid, Facet = Gender) %>% filter(!is.na(Facet)))
@@ -152,7 +152,7 @@ demo_long <- function(dat, facet_key){
   dat %>% transmute(.rid, Facet = factor("(All)"))
 }
 
-# 0/1组：按 facet 归一化
+# 0/1 group: normalize by facet
 build_cross_prop_grouped <- function(dat, adhd_cols, facet_key){
   a <- adhd_long(dat, adhd_cols)
   f <- demo_long(dat, facet_key)
@@ -162,7 +162,7 @@ build_cross_prop_grouped <- function(dat, adhd_cols, facet_key){
     group_by(Facet) %>% mutate(prop = n/sum(n)) %>% ungroup()
 }
 
-# Likert 单列（数字1–5或文字五级）：按 facet 归一化
+# Likert single column (numeric 1-5 or text five-level): normalize by facet
 build_cross_prop_likert <- function(dat, col, facet_key){
   validate(need(col %in% names(dat), paste0("Impact column not found: ", col)))
   L <- dat %>% transmute(.rid, Option = coerce_likert_1to5(.data[[col]])) %>%
@@ -175,11 +175,11 @@ build_cross_prop_likert <- function(dat, col, facet_key){
     group_by(Facet) %>% mutate(prop = n/sum(n)) %>% ungroup()
 }
 
-# 单列【分类/文本/数值】→ 按 facet 统计
+# Single column [categorical/text/numeric] → statistics by facet
 build_cross_prop_singlecat <- function(dat, col, facet_key){
   validate(need(col %in% names(dat), paste0("Column not found: ", col)))
   L <- dat %>% transmute(.rid, Option = as.character(.data[[col]])) %>%
-    filter(!is.na(Option), trimws(Option)!="")          # 去空白
+    filter(!is.na(Option), trimws(Option)!="")          # Remove blanks
   validate(need(nrow(L) > 0, paste0("No non-missing values in ", col)))
   f <- demo_long(dat, facet_key)
   j <- inner_join(L, f, by = ".rid", relationship = "many-to-many")
@@ -188,11 +188,11 @@ build_cross_prop_singlecat <- function(dat, col, facet_key){
     group_by(Facet) %>% mutate(prop = n / sum(n)) %>% ungroup()
 }
 
-# 统一绘图（Count 或 Percent）
+# Unified plotting (Count or Percent)
 plot_cross_group <- function(df, title_txt, mode=c("pct","cnt")){
   mode <- match.arg(mode)
   df <- df %>% mutate(Option = fct_reorder(Option, prop, .fun = mean))
-  p <- ggplot(df, aes(x = Option, y = if (mode=="pct") prop else n)) +
+  p <- ggplot(df, aes(x = Option, y = if (mode=="pct") prop else n, fill = Option)) +
     geom_col() +
     geom_text(aes(label = if (mode=="pct") scales::percent(prop, accuracy = 0.1) else n),
               vjust = 0.5, size = 6, fontface = "bold") +
@@ -266,8 +266,6 @@ sidebarInput <- function(id, date = "01-01-2025") {
       h4("ADHD New Zealand Online Research Survey"),
       h4("Latest Update:"),
       h4(date),
-      h4("Contact Email:"),
-      h5("Research Team"),
       width = 12,
       background = "black"
     )
@@ -327,7 +325,7 @@ server <- function(input, output) {
                         "__REGION__" = "Region")
     mode <- req(input[["side-show_mode"]])  # "pct" or "cnt"
     
-    # Impacts: 指定列（支持数字1–5或文字五级）
+    # Impacts: specified column (supports numeric 1-5 or text five-level)
     if (adhd_key == "__IMPACT_SINGLE__") {
       col <- req(input[["side-impact_col"]])
       cross_df <- build_cross_prop_likert(dat, col, facet_key)
@@ -335,7 +333,7 @@ server <- function(input, output) {
       return(plot_cross_group(cross_df, title_txt, mode))
     }
     
-    # 新增的单列（文本/类别/数值；其中 *_Effect/Matauranga/Support_effect 走 likert）
+    # New single columns (text/category/numeric; *_Effect/Matauranga/Support_effect use likert)
     if (adhd_key %in% c(
       "__FORMAL_DIAGNOSIS__","__DIAGNOSIS_AGE__","__DIAGNOSIS_WHO__",
       "__DIAGNOSIS_SYSTEM__","__WAIT_LIST__","__TREATMENT_EFFECT__",
@@ -363,7 +361,7 @@ server <- function(input, output) {
       return(plot_cross_group(cross_df, title_txt, mode))
     }
     
-    # 多列0/1组
+    # Multi-column 0/1 groups
     adhd_cols <- switch(adhd_key,
                         "__TREATMENT__"  = treatment_cols,
                         "__CHALLENGES__" = challenges_cols,
